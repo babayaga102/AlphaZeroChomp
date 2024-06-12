@@ -1,0 +1,5 @@
+matplotlib==3.7.2
+networkx==3.2.1
+numpy==1.26.4
+torch==2.2.1
+tqdm==4.65.0
