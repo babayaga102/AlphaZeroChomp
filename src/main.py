@@ -1,8 +1,18 @@
 import argparse
+import sys
 from Alpha_Chomp_Env import AlphaChompEnv
 from Resnet import ResNet
 from Alpha_GraphMCTS import GraphMCTS
 from AlphaZero import AlphaZeroChomp
+
+
+
+class CustomArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        self.print_help(sys.stderr)
+        print(f"\nError: {message}")
+        print("Invalid value for --mode. Allowed values are 'play' or 'train_and_play'.")
+        sys.exit(2)
 
 
 
@@ -35,8 +45,8 @@ def main():
         'verbose_Play': False,      #Bool: prints more when playing
         'C': 2,     #UCB coefficient to balance exploration/exploitation
         'MCTS_num_searches': 300,    #How many GraphMCTS searchs to choose 1 move to be played in SelfPlay
-        'learn_iterations': 2,     #How many Selplay and Training
-        'selfPlay_iterations' : 128,     #Number of games that if will play against itself for every SelfPlay
+        'learn_iterations': 15,     #How many Selplay and Training
+        'selfPlay_iterations' : 128,     #Number of games that if will play against itself for every SelfPlay. It's recomended to set selfPlay_iterations ≈ 50 + max_size**2
         'seflPlay_subgrids': True,      #If True, allow SelfPlay over all subgrids of the biggest state Board
         'epochs': 5,       #Training epochs
         'shuffle_replaybuffer': True,   # Bool: to shuffle or not the training Data befor training
@@ -69,12 +79,24 @@ def main():
     cli_args = parse_arguments()
 
     if cli_args.mode == 'train_and_play':
+        print("Training the neural network and then playing the game...")
         alphazero.learn()
+        print("Playing the game...")
+        alphazero.play_game()
+    elif cli_args.mode == 'play':
+        print("Playing the game...")
+        alphazero.play_game()
 
-    alphazero.play_game()
 
 
 
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+#

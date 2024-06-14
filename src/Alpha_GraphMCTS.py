@@ -47,12 +47,12 @@ class Node:
         if parent_node not in self.parents:
             self.parents[parent_node] = NodeData(action, action_prob)
 
-  
+
     def is_ending_node(self, node_state=None):
         """
         The function `is_ending_node` checks if a given node state or the current state is equal to a tensor
         of zeros.
-        
+
         :param node_state: The `node_state` parameter represents the state of a node in your code. It is a
         tensor with dimensions `max_size x max_size`. The function `is_ending_node` checks if the given
         `node_state` (or the default `self.state` if `node_state` is not
@@ -89,7 +89,7 @@ class Node:
         """
         The `select` function iterates through children nodes to find the one with the highest UCB value and
         returns it along with the corresponding action taken.
-        
+
         :param node_storage: It looks like the `select` method is part of a larger class or function related
         to a Monte Carlo Tree Search (MCTS) algorithm. The method is responsible for selecting the best
         child node based on some criteria
@@ -122,7 +122,7 @@ class Node:
         The function `get_ucb` calculates the Upper Confidence Bound (UCB) value for a given child node in
         a Monte Carlo Tree Search algorithm, taking into account the child's visit count, score, and action
         probability.
-        
+
         :param child: It looks like the code you provided is a method for calculating the Upper Confidence
         Bound (UCB) value for a child node in a Monte Carlo Tree Search algorithm. The UCB value is used to
         balance exploration and exploitation in the search process
@@ -148,7 +148,7 @@ class Node:
         """
         The `expand` function in Python is used to expand a node in a tree structure based on a given
         policy, creating child nodes if necessary and updating the node storage accordingly.
-        
+
         :param node_storage: The `node_storage` parameter in the `expand` method is a dictionary that
         stores nodes based on their unique keys. This dictionary is used to keep track of nodes that have
         already been visited or expanded during the search process. If a node is not already in the
@@ -242,7 +242,7 @@ class Node:
         """
         The `backpropagate` function updates the rewards of nodes in a tree structure based on a given
         reward and parent path, with an option for only propagating along a specific path.
-        
+
         :param reward: The `reward` parameter in the `backpropagate` method represents the reward signal
         that is being propagated back through the tree during the reinforcement learning process. It is
         used to update the values associated with each node in the tree based on the outcome of the
@@ -284,7 +284,7 @@ class Node:
         """
         The function `get_state_key` takes a state, converts it to a byte array, calculates its SHA-1
         hash, and returns the hexadecimal representation of the hash.
-        
+
         :param state: The `state` parameter in the `get_state_key` function seems to be a numpy array
         that is being converted to bytes and then hashed using the SHA-1 algorithm to generate a
         hexadecimal digest. This function is likely used to create a unique key based on the state of the
@@ -302,7 +302,7 @@ class Node:
         column = action_number % self.args['max_size']
         return (row,column)
 
-    
+
     def best_child_decay(self):
         """
         The function `best_child_decay` resets the `best_child` and `best_ucb` variables after a certain
@@ -333,13 +333,12 @@ class GraphMCTS:
         """
         The `search` function in Python uses Monte Carlo Tree Search (MCTS) to find the best move in a game
         state, updating node values and probabilities based on the search results.
-        
+
         :param state: The `search` method you provided seems to be implementing the Monte Carlo Tree Search
         (MCTS) algorithm for decision-making in a game. The method takes several parameters and performs a
         search to find the best action to take based on the current state of the game
         :param playable_cells: The `playable_cells` parameter in the `search` method represents the cells on
-        the game board where a player can make a move. These cells are typically empty or available for the
-        player to place their game piece or token. The method uses this information to determine the
+        the game board where a player can make a move. The method uses this information to determine the
         possible actions or moves that can
         :param start_node: The `start_node` parameter in the `search` method is used to specify a starting
         node for the Monte Carlo Tree Search (MCTS) algorithm. If a `start_node` is provided, the search
@@ -482,7 +481,7 @@ class GraphMCTS:
         plt.title("MCTS Visualization")
         plt.show()
 
-   
+
     def collect_actions(self):
         """Collect the actions of player 1 and player 2 from the parent_path_mcts. These action will be fed to the NN ResNet
         model as a list of tuple and the model will transcribe that into matrices and stacking togheter in a sandwitch
@@ -518,7 +517,7 @@ class GraphMCTS:
         """
         The `add_dirichlet_noise` function adds Dirichlet noise to nodes based on specified conditions
         before starting a search process.
-        
+
         :param node: The `add_dirichlet_noise` function is used to add Dirichlet noise to a given node
         before starting a search. The function takes into account the value of
         `self.args['MCTS_add_dirich_noise_par']` to determine how the noise should be added:

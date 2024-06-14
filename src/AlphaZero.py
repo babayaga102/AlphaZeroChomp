@@ -40,7 +40,7 @@ class AlphaZeroChomp():
         This function trains a Resnet model using self-play iterations and training epochs, evaluating the
         model's strategies and saving checkpoints periodically.
         """
-    
+
         retrain = input('Do you want to retrain the model? (y/n): ').strip().lower()
         self.load_model() if retrain == "y" else None
         alfa_start_time = time.time()
@@ -78,7 +78,7 @@ class AlphaZeroChomp():
         """
         The `train` function implements training logic for a neural network model using a replay buffer and
         dynamic batching.
-        
+
         :param TrainMemory: TrainMemory is a list containing tuples of training data samples. Each tuple
         consists of the following elements:
         :return: The `train` method does not explicitly return anything. It performs training iterations on
@@ -140,7 +140,7 @@ class AlphaZeroChomp():
         """
         The `selfPlay` function collects data for training by simulating games and storing game states,
         actions, and outcomes in a memory buffer.
-        
+
         :param selfPlay_iteration: The `selfPlay_iteration` parameter in the `selfPlay` method is used to
         determine the iteration number for self-play. This iteration number is used within the method to
         access specific grid sizes or configurations for the game being played. It is used to control the
@@ -150,7 +150,7 @@ class AlphaZeroChomp():
         self-play. This list is stored in the `ReturnMemory` variable and is returned at the end of the
         method.
         """
-        
+
         #print(f"\nStarting selfplay!")
         BufferMemory = []
         current_player = 1
@@ -173,7 +173,7 @@ class AlphaZeroChomp():
             #Apply tempetarure fro exploration/exploitation increase
             temp_action_prob_mcts = action_prob_mcts.clone() ** (1/self.args['temperature'])
 
-            action = torch.multinomial(temp_action_prob_mcts, 1).item()
+            action = torch.multinomial(temp_action_prob_mcts, 1).item() #sample the action from the temp_action_prob_mcts and not from action_prob_mcts
             action = self.mcts.num_to_move(action)
             print(f"\nAlphazer state: {state}") if self.args['verbose_Alphazero'] else None
             current_actions, opponent_actions = self.collect_actions(action)
@@ -209,7 +209,7 @@ class AlphaZeroChomp():
         """
         The `play_game` function allows a player to interact with a game by taking turns against an AI
         opponent or playing first, with options to start a new game or quit.
-        
+
         :param grid_size: The `grid_size` parameter in the `play_game` function represents the size of the
         grid to be played in the game. It is a tuple containing the height and width of the grid. The
         function allows the user to input the height and width of the grid within certain constraints

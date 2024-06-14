@@ -1,3 +1,10 @@
+"""
+This code is the standard way of building a classical MCTS on a Graph Tree. It's not
+used for AlphaZeroChomp directly. It just helped me to understand and develop the project on the top of it.
+"""
+
+
+
 from collections import deque
 import random
 import numpy as np
