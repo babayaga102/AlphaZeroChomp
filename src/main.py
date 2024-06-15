@@ -1,5 +1,6 @@
 import argparse
 import sys
+import time
 from Alpha_Chomp_Env import AlphaChompEnv
 from Resnet import ResNet
 from Alpha_GraphMCTS import GraphMCTS
@@ -34,18 +35,18 @@ def main():
 
     args = {
         'min_size': 2,      #It's highly suggested to set min_size = 2
-        'max_size': 5,      #The maximum size of the game grid or game board
+        'max_size': 4,      #The maximum size of the game grid or game board
         'save_data_env': False,
-        'model_device': 'cpu',  #Device requested for the model
-        'device': 'cpu',    #Device for other operations, tipically 'cpu'
+        'model_device': 'cpu',  #Device requested for the model. Supports 'cpu' or 'mps'. To train on 'mps' set 'MCTS_set_equal_prior' = True
+        'device': 'cpu',    #Device for other operations Graph-MCTS search, tipically 'cpu'
         'verbose_A_game': False,    #Bool: if AlphaChompEnv is verbose
         'verbose_mcts': False,     #Bool: if GraphMCTS is verbose
         'verbose_resnet': True,     #Bool: if Resnet is verbose
         'verbose_Alphazero' : False,    #Bool: if Alphazero is verbose
-        'verbose_Play': False,      #Bool: prints more when playing
+        'verbose_Play': True,      #Bool: prints more when playing
         'C': 2,     #UCB coefficient to balance exploration/exploitation
         'MCTS_num_searches': 300,    #How many GraphMCTS searchs to choose 1 move to be played in SelfPlay
-        'learn_iterations': 15,     #How many Selplay and Training
+        'learn_iterations': 2,     #How many Selplay and Training
         'selfPlay_iterations' : 128,     #Number of games that if will play against itself for every SelfPlay. It's recomended to set selfPlay_iterations ≈ 50 + max_size**2
         'seflPlay_subgrids': True,      #If True, allow SelfPlay over all subgrids of the biggest state Board
         'epochs': 5,       #Training epochs
@@ -82,6 +83,7 @@ def main():
         print("Training the neural network and then playing the game...")
         alphazero.learn()
         print("Playing the game...")
+        time.sleep(2)
         alphazero.play_game()
     elif cli_args.mode == 'play':
         print("Playing the game...")

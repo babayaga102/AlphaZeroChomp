@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import time
+from datetime import timedelta
 import os
 import sys
 import matplotlib.pyplot as plt
@@ -37,8 +38,25 @@ class AlphaZeroChomp():
 
     def learn(self):
         """
-        This function trains a Resnet model using self-play iterations and training epochs, evaluating the
+        Train a ResNet model using self-play iterations and training epochs, evaluating the
         model's strategies and saving checkpoints periodically.
+
+        This function performs the following steps:
+        1. Optionally reloads the model if retraining is requested.
+        2. Initializes parameters and iterates through a series of learning iterations.
+        3. Collects training data through self-play simulations.
+        4. Trains the model using the collected data over several epochs.
+        5. Evaluates the model's strategies through self-play.
+        6. Saves checkpoints at regular intervals.
+        7. Optionally visualizes the search tree and plots analytics.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
         """
 
         retrain = input('Do you want to retrain the model? (y/n): ').strip().lower()
@@ -64,8 +82,11 @@ class AlphaZeroChomp():
 
             self.save_checkpoints(iteration)
         alfa_end_time = time.time()
+        time_spent = alfa_end_time - alfa_start_time
         #if self.args['verbose_Alphazero']:
-        print(f"\nLearn Time Alphazero: {alfa_end_time - alfa_start_time} seconds for ...")
+        print(f"\nLearning Time Alphazero: {str(timedelta(seconds=time_spent))}\n")
+        print(f"Printing the Hyperparameters of the current programme...")
+        print('\n'.join(f"{key}: {value}" for key, value in self.args.items())) #Prints the Hyperparameters
         print(f"\nThe Model has been trained successfully!\n")
         root_node = self.mcts.find_node_by_state(torch.ones(self.args['max_size'], self.args['max_size']))
         #self.mcts.visualize_mcts(root_node)    #Uncomment to visualize the tree. It may require hours of computation...
@@ -76,14 +97,21 @@ class AlphaZeroChomp():
 
     def train(self, TrainMemory):
         """
-        The `train` function implements training logic for a neural network model using a replay buffer and
-        dynamic batching.
+        Train the neural network model using a replay buffer and dynamic batching.
 
-        :param TrainMemory: TrainMemory is a list containing tuples of training data samples. Each tuple
-        consists of the following elements:
-        :return: The `train` method does not explicitly return anything. It performs training iterations on
-        the model using the provided `TrainMemory` data and updates the model parameters based on the
-        calculated losses.
+        Parameters
+        ----------
+        TrainMemory : list
+            A list of tuples containing training data samples. Each tuple consists of:
+            - state : array-like
+            - policy_target : array-like
+            - curr_actions : array-like
+            - opp_actions : array-like
+            - value_target : array-like
+
+        Returns
+        -------
+        None
         """
         self.model.train()
         random.shuffle(TrainMemory) if self.args['shuffle_replaybuffer'] else None
@@ -138,17 +166,18 @@ class AlphaZeroChomp():
 
     def selfPlay(self, selfPlay_iteration):
         """
-        The `selfPlay` function collects data for training by simulating games and storing game states,
-        actions, and outcomes in a memory buffer.
+        Simulate games to collect data for training, storing game states, actions, and outcomes.
 
-        :param selfPlay_iteration: The `selfPlay_iteration` parameter in the `selfPlay` method is used to
-        determine the iteration number for self-play. This iteration number is used within the method to
-        access specific grid sizes or configurations for the game being played. It is used to control the
-        flow of the self-play process and to
-        :return: The `selfPlay` method returns a list of tuples containing information about the game state,
-        action probabilities, current actions, opponent actions, and outcome for each move made during
-        self-play. This list is stored in the `ReturnMemory` variable and is returned at the end of the
-        method.
+        Parameters
+        ----------
+        selfPlay_iteration : int
+            Iteration number for self-play, used to control grid sizes or game configurations.
+
+        Returns
+        -------
+        list
+            A list of tuples containing the game state, action probabilities, current actions, opponent actions,
+            and outcome for each move made during self-play.
         """
 
         #print(f"\nStarting selfplay!")
@@ -207,13 +236,18 @@ class AlphaZeroChomp():
 
     def play_game(self, grid_size= None):
         """
-        The `play_game` function allows a player to interact with a game by taking turns against an AI
-        opponent or playing first, with options to start a new game or quit.
+        Allows a player to interact with a game by taking turns against an AI opponent or playing first,
+        with options to start a new game or quit.
 
-        :param grid_size: The `grid_size` parameter in the `play_game` function represents the size of the
-        grid to be played in the game. It is a tuple containing the height and width of the grid. The
-        function allows the user to input the height and width of the grid within certain constraints
-        specified by `self
+        Parameters
+        ----------
+        grid_size : tuple of int, optional
+            The size of the grid to be played in the game. It should be a tuple (height, width).
+            If not provided, the function will prompt the user to input the grid size.
+
+        Returns
+        -------
+        None
         """
         self.load_model()
         self.model.eval()
@@ -301,9 +335,23 @@ class AlphaZeroChomp():
         return (tup[1], tup[0])
 
     def collect_actions(self, action):
-        '''Collects the actions during the game and creates 2 matrix which displays the actions of
-        current player and opponent. Then, these 2 matrix will be saved in ReturnMemory and will be
-        feed into the NN Resnet model '''
+        """
+        Collects the actions during the game and creates two matrices which display the actions of
+        the current player and the opponent. These matrices are saved in ReturnMemory and fed into
+        the ResNet model.
+
+        Parameters
+        ----------
+        action : tuple of int
+            The coordinates of the action taken by the current player.
+
+        Returns
+        -------
+        torch.Tensor
+            A tensor representing the actions of the current player.
+        torch.Tensor
+            A tensor representing the actions of the opponent.
+        """
         if self.turn == 1:
             #Create blank tensors at first turn
             self.current_actions_mat = torch.zeros(self.args['max_size'],self.args['max_size'])
@@ -318,7 +366,18 @@ class AlphaZeroChomp():
             raise ValueError(f"The current action:{action} has already been taken!")
         return self.current_actions_mat.clone() , self.opponent_actions_mat.clone()
 
+
+
+
     def save_checkpoints(self, iteration):
+        """
+        Saves the model and optimizer state to checkpoint files.
+
+        Parameters
+        ----------
+        iteration : int
+            The current iteration number used for naming the checkpoint files.
+        """
         directory = 'checkpoints'
         if not os.path.exists(directory):
             os.makedirs(directory)
@@ -327,15 +386,26 @@ class AlphaZeroChomp():
         # Save model state
         torch.save({
             'model_state_dict': self.model.state_dict(),
-        }, f"{path}model_{iteration}.pt")
+        }, f"{path}model_size_{self.args['max_size']}_iter_{iteration}.pt")
 
         # Save optimizer state
         torch.save({
             'optimizer_state_dict': self.optim.state_dict()
-        }, f"{path}optimizer_{iteration}.pt")
+        }, f"{path}optimizer_size_{self.args['max_size']}_iter_{iteration}.pt")
+
+
 
     def plot_analitics(self):
-        '''Plots the loss and other analitics to estimate the goodness of the game'''
+        """
+        Plots training loss and various game analytics, including the player's winning rate and the optimal strategy history.
+
+        This method visualizes the following:
+        - Training loss over batches
+        - Player 1's winning rate over training iterations
+        - Optimal strategy history on a square state
+        - Average turns in testing over learning iterations
+        """
+
         loss_array = np.array(self.loss_hist)
         plt.figure('Training Loss Over Batches', figsize=(10, 6))
         plt.plot(loss_array, label='Training Loss')
@@ -386,7 +456,23 @@ class AlphaZeroChomp():
 
         plt.show()
 
+
     def load_model(self):
+        """
+        List and load available model checkpoints, ensuring the selected model matches the current configuration.
+
+        This function lists all available model checkpoints and allows the user to choose one for loading. The
+        selected model's configuration is checked against the current `max_size` to ensure compatibility. If the
+        user makes multiple incorrect selections, the function will exit.
+
+        Notes:
+            - The checkpoints are sorted in reverse order for easy access to the latest checkpoint.
+            - Users can either select a specific checkpoint or press Enter to load the latest one.
+
+        Raises:
+            ValueError: If the user inputs an invalid checkpoint number or if the checkpoint's size does not match the current `max_size`.
+
+        """
         # List available model checkpoints
         checkpoints = [f for f in os.listdir('checkpoints') if f.startswith('model_') and f.endswith('.pt')]
         checkpoints.sort(reverse=True)
@@ -394,28 +480,70 @@ class AlphaZeroChomp():
         print("\nAvailable checkpoints:")
         for i, checkpoint in enumerate(checkpoints):
             print(f"{i + 1}. {checkpoint}")
+        max_guessing = 10
+        for i in range(max_guessing):
 
-        # Ask user to choose a checkpoint or load the latest
-        choice = input("\nEnter the number of the checkpoint to load (or press Enter to load the latest): ")
-        if choice == "":
-            checkpoint_path = os.path.join('checkpoints', checkpoints[0])
-        else:
-            checkpoint_path = os.path.join('checkpoints', checkpoints[int(choice) - 1])
+            if i == max_guessing -1:
+                print(f"\nYou have been guessing wrong too many times. See you later...\n")
+                exit()
 
-        # Load the model state
-        checkpoint = torch.load(checkpoint_path)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
+            # Ask user to choose a checkpoint or load the latest
+            choice = input("\nEnter the number of the checkpoint to load (or press Enter to load the latest): ")
+            if choice == "":
+                checkpoint_path = os.path.join('checkpoints', checkpoints[0])
+            else:
+                try:
+                    checkpoint_path = os.path.join('checkpoints', checkpoints[int(choice) - 1])
+                except (IndexError, ValueError):
+                    print("Invalid choice. Please enter a valid checkpoint number.")
+                    continue
 
-        # Load the corresponding optimizer state
-        iteration = checkpoint_path.split('_')[-1].split('.')[0]
-        optimizer_checkpoint_path = os.path.join('checkpoints', f'optimizer_{iteration}.pt')
-        optimizer_checkpoint = torch.load(optimizer_checkpoint_path)
-        self.optim.load_state_dict(optimizer_checkpoint['optimizer_state_dict'])
+            # Extract the size from the checkpoint filename
+            checkpoint_size = int(checkpoint_path.split('_')[2])
 
-        print(f"Loaded model checkpoint: {checkpoint_path}")
-        print(f"Loaded optimizer checkpoint: {optimizer_checkpoint_path}")
+            # Check if the size matches self.args['max_size']
+            if checkpoint_size != self.args['max_size']:
+                print(f"Error: Checkpoint size {checkpoint_size} does not match the current max_size {self.args['max_size']}.")
+                continue
+
+            # Load the model state
+            checkpoint = torch.load(checkpoint_path)
+            self.model.load_state_dict(checkpoint['model_state_dict'])
+
+            # Load the corresponding optimizer state
+            iteration = checkpoint_path.split('_')[-1].split('.')[0]
+            optimizer_checkpoint_path = os.path.join('checkpoints', f'optimizer_size_{checkpoint_size}_iter_{iteration}.pt')
+            optimizer_checkpoint = torch.load(optimizer_checkpoint_path)
+            self.optim.load_state_dict(optimizer_checkpoint['optimizer_state_dict'])
+
+            print(f"Loaded model checkpoint: {checkpoint_path}")
+            print(f"Loaded optimizer checkpoint: {optimizer_checkpoint_path}")
+            break
+
 
     def plot_policy(self, action_probs):
+        """
+        Plot the policy or action-probability distribution.
+
+        This function visualizes the policy distribution of the AI by plotting the action probabilities.
+        It expects a 2D tensor which it squeezes into a 1D array before plotting.
+
+        Parameters
+        ----------
+        action_probs : torch.Tensor
+            A 2D tensor containing the action probabilities.
+
+        Raises
+        ------
+        ValueError
+            If `action_probs` is not a 1D array after squeezing.
+
+        Example
+        -------
+        >>> action_probs = torch.tensor([[0.1, 0.2, 0.7]])
+        >>> plot_policy(action_probs)
+
+        """
 
         action_probs = action_probs.cpu().numpy()
         if action_probs.ndim == 2:
@@ -432,8 +560,32 @@ class AlphaZeroChomp():
         plt.show()
 
     def test_optim_strategies(self, grid_size, P1_actions, P2_actions, winner):
-        '''Test if the action are optimal strategy or not on a square root. If the grid_size
-        is not square it collects and update the winning rate'''
+        """
+        Test if the actions are optimal strategies on a square grid. If the grid size
+        is not square, it collects and updates the winning rate.
+
+        Parameters
+        ----------
+        grid_size : tuple
+            The dimensions of the grid being tested.
+        P1_actions : list of tuple
+            The actions taken by Player 1. Each action is a tuple representing the coordinates of the action.
+        P2_actions : list of tuple
+            The actions taken by Player 2. Each action is a tuple representing the coordinates of the action.
+        winner : int
+            The player who won the game (1 or 2).
+
+        Notes
+        -----
+        - If the grid is square and Player 1 wins, the function checks if Player 1 followed the optimal strategy.
+        - The optimal strategy is defined as Player 1 making the first move at (1, 1) and then mirroring Player 2's moves.
+        - If the grid is not square, the function simply updates the winning rate if Player 1 wins.
+
+        Returns
+        -------
+        None
+        """
+
         if self.A_game.is_square(grid_size) is True and winner == 1:
             self.P1_winning_rate += 1
             if P1_actions[0] == (1,1) and len(P2_actions) > 1:
@@ -456,8 +608,26 @@ class AlphaZeroChomp():
                 pass
 
     def SelfPlay_evaluation(self):
-        '''The AI plays againt itself at is best and determines a winning rate and collects
-         the best optimal strategies on square roots.'''
+        """
+        The AI plays against itself at its best and determines a winning rate, collecting
+        the best optimal strategies on square grids.
+
+        Notes
+        -----
+        - The function evaluates the AI's performance by having it play against itself on all rectangular grid sizes.
+        - It keeps track of the turn count, winning rate, and optimal strategies used on square grids.
+        - The evaluation results are stored in the class attributes for further analysis.
+
+        Returns
+        -------
+        None
+
+        Example
+        -------
+        >>> self.SelfPlay_evaluation()
+
+        """
+
         self.model.eval()
         self.turn_counter = 0
 

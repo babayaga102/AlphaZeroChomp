@@ -12,14 +12,13 @@ class ResNet(nn.Module):
         num_hidden = self.args['num_hidden']
         num_resBlocks = self.args['num_resBlocks']
         self.action_size = self.args['max_size']**2
-        self.coordinates_matrix = self.create_coordinate_matrix()   #Adds coordinates to exploit simmetries
 
         self.startBlock = nn.Sequential(
             nn.Conv2d(4, num_hidden, kernel_size=3, padding=1),
             nn.BatchNorm2d(num_hidden),
             nn.ReLU()
         )
- 
+
         self.backBone = nn.ModuleList(
             [ResBlock(num_hidden) for i in range(num_resBlocks)]
         )
@@ -44,17 +43,28 @@ class ResNet(nn.Module):
         self.set_seed()
         self.set_device()
         self.apply(self._init_weights)
+        self.coordinates_matrix = self.create_coordinate_matrix().to(self.device)   #Adds coordinates to exploit simmetries
 
 
         if self.args.get('verbose_resnet', False):
             print(f"\nResNet Device: {next(self.parameters()).device}")
             print(f"ResNet:\n{self}")
 
-    
+
     def set_device(self):
         """
-        This function sets the device for a PyTorch model based on the specified model device and
-        availability of different devices.
+        Set the device for the PyTorch model based on the specified model device and availability.
+
+        This function updates the model to use 'mps' if specified and available, otherwise 'cuda'
+        if specified and available, and defaults to 'cpu' if neither is available.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
         """
         if self.args['model_device'] == 'mps' and torch.backends.mps.is_available():
              self.to('mps')
@@ -67,13 +77,19 @@ class ResNet(nn.Module):
             self.device = 'cpu'
 
     def create_coordinate_matrix(self):
-        '''Creates a symmetric matrix (max_size, max_size) which has only positive numbers always different
-        on the diagonal (from 0 to max_size - 1) but symmetric to encode the positional arguments symmetries
-        [[0, 3, 4],
-         [3, 1, 5],
-         [4, 5, 2]]'''
+        """
+        Creates a symmetric matrix with unique diagonal elements and symmetric off-diagonal elements.
+
+        The matrix is of size `(max_size, max_size)` with diagonal elements from `0` to `max_size - 1`
+        and symmetric off-diagonal elements that encode positional symmetries.
+
+        Returns
+        -------
+        torch.Tensor
+            A symmetric matrix with unique diagonal elements and symmetric off-diagonal elements.
+        """
         max_size = self.args['max_size']
-        matrix = torch.zeros((max_size, max_size), dtype=torch.float32)
+        matrix = torch.zeros((max_size, max_size), dtype=torch.float32, device = self.device)
 
         for i in range(max_size):
             matrix[i, i] = i
@@ -105,13 +121,24 @@ class ResNet(nn.Module):
                 nn.init.constant_(module.bias, 0)
 
     def mask_and_renormalize(self, x_input, unrenorm_policy):
-        '''Masks and renormalize the policy using Softmax function. This method works pretty well,
-        however has some drawbacks. When the probability of bad move, which is close to 0, pass trought
-        Softmax function gets smooth out and became much higher. This allow the probability of a bad move to became
-        much higher than should be. Using this masking method the network will converge slower. Conversely, it
-        adds kind of noise in the network when choicing which can be positive.
-        It can work with args['MCTS_set_equal_prior'] = False.
-        This function can distinguish between trayning and playing input using DynamicBatching. '''
+        """
+        Masks and renormalizes the policy using the Softmax function.
+
+        This method applies a mask to the policy to exclude invalid moves, then renormalizes
+        the policy using the Softmax function. It can handle both batched and unbatched inputs.
+
+        Parameters
+        ----------
+        x_input : torch.Tensor
+            Input tensor representing the state, either batched (3D) or unbatched (2D).
+        unrenorm_policy : torch.Tensor
+            Unrenormalized policy tensor to be masked and renormalized.
+
+        Returns
+        -------
+        torch.Tensor
+            Masked and renormalized policy tensor.
+        """
         if x_input.dim() == 2:  # Unbatched input
             masked_policy = unrenorm_policy.clone().squeeze()
             x_input_flat = torch.flatten(x_input)
@@ -131,12 +158,27 @@ class ResNet(nn.Module):
 
 
     def mask_and_renorm_NoSoftmax(self, x_input, unrenorm_policy):
-        '''Masks and renormalize the policy using No-Softmax function. This method works the Best,but
-        it must be used in conjuction with args['MCTS_set_equal_prior'] = True. It do not smooth out
-        The probability of bad moves and allow to a faster convergenge of the Resnet network.
-        This function can distinguish between training and playing input using DynamicBatching. '''
+        """
+        Masks and renormalizes the policy without using the Softmax function.
 
-        x_input = x_input.clone()
+        This method applies a mask to the policy to exclude invalid moves and renormalizes
+        the policy without using the Softmax function. It works best with args['MCTS_set_equal_prior'] = True
+        and allows faster convergence of the ResNet network. This function can handle both batched and unbatched inputs.
+
+        Parameters
+        ----------
+        x_input : torch.Tensor
+            Input tensor representing the state, either batched (3D) or unbatched (2D).
+        unrenorm_policy : torch.Tensor
+            Unrenormalized policy tensor to be masked and renormalized.
+
+        Returns
+        -------
+        torch.Tensor
+            Masked and renormalized policy tensor.
+        """
+
+        x_input = x_input.clone().to(self.device)
         if x_input.dim() == 2:  # Unbatched input
             masked_policy = unrenorm_policy.clone().squeeze()
             x_input_flat = torch.flatten(x_input)
@@ -168,33 +210,34 @@ class ResNet(nn.Module):
 
     def prepare_data(self, x_input, current_actions=None, opponent_actions=None):
         """
-        The `prepare_data` function in Python processes input data for a neural network model by
-        incorporating current and opponent actions.
-        
-        :param x_input: It seems like the description of `x_input` is missing in your message. If you
-        provide me with the details of `x_input`, I can assist you further with the `prepare_data` function
-        :param current_actions: The `current_actions` parameter is a list of actions taken by the current
-        player. Each action is represented as a tuple containing the coordinates of the action in the game
-        grid. For example, `current_actions = [(0, 1), (2, 2), (1, 0)]
-        :param opponent_actions: The `opponent_actions` parameter in the `prepare_data` method represents
-        the actions taken by the opponent in a game or scenario. These actions are used to update the
-        opponent's state in the input data tensor. In the provided code snippet, the opponent's actions are
-        used to populate the `op
-        :return: The `prepare_data` method returns the modified input data `x_input_mod` after processing
-        based on the input dimensions and provided actions for both the current player and opponent. The
-        returned `x_input_mod` is a tensor that includes the current player's actions, opponent's actions,
-        the original input `x_input`, and a coordinates matrix stacked along the batch dimension if the
-        input is batched.
+        Prepares input data for a neural network model by incorporating current and opponent actions.
+
+        Parameters
+        ----------
+        x_input : torch.Tensor
+            The state of the game.
+        current_actions : list or torch.Tensor, optional
+            Actions taken by the current player. For self-play, it is a list of tuples with coordinates of actions.
+            For training, it is a matrix of dimensions (max_size, max_size) with +1 at action coordinates.
+        opponent_actions : list or torch.Tensor, optional
+            Actions taken by the opponent player. For self-play, it is a list of tuples with coordinates of actions.
+            For training, it is a matrix of dimensions (max_size, max_size) with -1 at action coordinates.
+
+        Returns
+        -------
+        torch.Tensor
+            The modified input data after processing, which includes the current player's actions, opponent's actions,
+            the original input state, and a coordinates matrix stacked together.
         """
         if x_input.dim() == 2:  # Unbatched input
-            current = torch.zeros(self.args['max_size'], self.args['max_size'])
-            opponent = torch.zeros(self.args['max_size'], self.args['max_size'])
+            current = torch.zeros(self.args['max_size'], self.args['max_size']).to(self.device)
+            opponent = torch.zeros(self.args['max_size'], self.args['max_size']).to(self.device)
             if current_actions is not None and opponent_actions is not None:
                 for action in current_actions:
                     current[action[0], action[1]] = 1.
                 for action in opponent_actions:
                     opponent[action[0], action[1]] = -1.
-            x_input_mod = torch.stack((current, x_input, opponent, self.coordinates_matrix), dim=0)
+            x_input_mod = torch.stack((current, x_input.to(self.device), opponent, self.coordinates_matrix), dim=0)
             x_input_mod = x_input_mod.unsqueeze(0)  # Add batch dimension
 
         elif x_input.dim() == 3:  # Batched input
@@ -203,12 +246,14 @@ class ResNet(nn.Module):
             for i in range(batch_size):
                 current = current_actions[i]
                 opponent = opponent_actions[i]
-                x_input_m = torch.stack((current, x_input[i], opponent, self.coordinates_matrix), dim=0)
+                x_input_m = torch.stack((current.to(self.device), x_input[i].to(self.device), opponent.to(self.device), self.coordinates_matrix), dim=0)
                 x_input_mod.append(x_input_m)
             x_input_mod = torch.stack(x_input_mod, dim=0)  # Stack along the batch dimension
 
         else:
             raise ValueError(f"The input shape: {x_input.dim()} do not correspond to the possibilities!")
+
+        x_input_mod.to(self.device)
 
         return x_input_mod
 
@@ -225,6 +270,20 @@ class ResNet(nn.Module):
 
 
 class ResBlock(nn.Module):
+    """
+    A Residual Block for a neural network.
+
+    Parameters
+    ----------
+    num_hidden : int
+        Number of hidden units in the convolutional layers.
+
+    Methods
+    -------
+    forward(x)
+        Performs the forward pass of the residual block.
+
+    """
     def __init__(self, num_hidden):
         super().__init__()
 
@@ -234,10 +293,14 @@ class ResBlock(nn.Module):
         self.bn2 = nn.BatchNorm2d(num_hidden)
 
     def forward(self, x):
+        """
+        .. :no-index:
+        The `forward` function defines the forward pass of the ResNet block.
+        """
         residual = x
         x = F.relu(self.bn1(self.conv1(x)))
         x = self.bn2(self.conv2(x))
-        x += residual   # Resonance
+        x += residual   # Residual addingtion
         x = F.relu(x)
         return x
 

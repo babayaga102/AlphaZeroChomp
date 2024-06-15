@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>AlphaZeroChomp &#8212; AlphaZeroChomp 1.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=61cd365c" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=12dfc556" />
+    <script src="_static/documentation_options.js?v=8d563738"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Welcome to AlphaZeroChomp’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-main">
+<span id="alphazerochomp"></span><h1>AlphaZeroChomp<a class="headerlink" href="#module-main" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="main.CustomArgumentParser">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">main.</span></span><span class="sig-name descname"><span class="pre">CustomArgumentParser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prog=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epilog=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parents=[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">formatter_class=&lt;class</span> <span class="pre">'argparse.HelpFormatter'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix_chars='-'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fromfile_prefix_chars=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">argument_default=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conflict_handler='error'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_help=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_abbrev=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exit_on_error=True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#CustomArgumentParser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#main.CustomArgumentParser" title="Link to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="main.CustomArgumentParser.error">
+<span class="sig-name descname"><span class="pre">error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">string</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#CustomArgumentParser.error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#main.CustomArgumentParser.error" title="Link to this definition">¶</a></dt>
+<dd><p>Prints a usage message incorporating the message to stderr and
+exits.</p>
+<p>If you override this in a subclass, it should not return – it
+should either exit or raise an exception.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class" id="module-Resnet">
+<span id="module-Alpha_GraphMCTS"></span><span id="module-AlphaZero"></span><dt class="sig sig-object py" id="Resnet.ResBlock">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Resnet.</span></span><span class="sig-name descname"><span class="pre">ResBlock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_hidden</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Resnet.html#ResBlock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Resnet.ResBlock" title="Link to this definition">¶</a></dt>
+<dd><p>A Residual Block for a neural network.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>num_hidden</strong> (<em>int</em>) – Number of hidden units in the convolutional layers.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="Resnet.ResBlock.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Resnet.html#ResBlock.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Resnet.ResBlock.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Performs the forward pass of the residual block.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Resnet.html#ResBlock.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id0" title="Link to this definition">¶</a></dt>
+<dd><p>The <cite>forward</cite> function defines the forward pass of the ResNet block.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="Resnet.ResNet">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Resnet.</span></span><span class="sig-name descname"><span class="pre">ResNet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Resnet.html#ResNet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Resnet.ResNet" title="Link to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="Resnet.ResNet.create_coordinate_matrix">
+<span class="sig-name descname"><span class="pre">create_coordinate_matrix</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Resnet.html#ResNet.create_coordinate_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Resnet.ResNet.create_coordinate_matrix" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a symmetric matrix with unique diagonal elements and symmetric off-diagonal elements.</p>
+<p>The matrix is of size <cite>(max_size, max_size)</cite> with diagonal elements from <cite>0</cite> to <cite>max_size - 1</cite>
+and symmetric off-diagonal elements that encode positional symmetries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A symmetric matrix with unique diagonal elements and symmetric off-diagonal elements.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Resnet.ResNet.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opponent_actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Resnet.html#ResNet.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Resnet.ResNet.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Resnet.ResNet.mask_and_renorm_NoSoftmax">
+<span class="sig-name descname"><span class="pre">mask_and_renorm_NoSoftmax</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unrenorm_policy</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Resnet.html#ResNet.mask_and_renorm_NoSoftmax"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Resnet.ResNet.mask_and_renorm_NoSoftmax" title="Link to this definition">¶</a></dt>
+<dd><p>Masks and renormalizes the policy without using the Softmax function.</p>
+<p>This method applies a mask to the policy to exclude invalid moves and renormalizes
+the policy without using the Softmax function. It works best with args[‘MCTS_set_equal_prior’] = True
+and allows faster convergence of the ResNet network. This function can handle both batched and unbatched inputs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_input</strong> (<em>torch.Tensor</em>) – Input tensor representing the state, either batched (3D) or unbatched (2D).</p></li>
+<li><p><strong>unrenorm_policy</strong> (<em>torch.Tensor</em>) – Unrenormalized policy tensor to be masked and renormalized.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Masked and renormalized policy tensor.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Resnet.ResNet.mask_and_renormalize">
+<span class="sig-name descname"><span class="pre">mask_and_renormalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unrenorm_policy</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Resnet.html#ResNet.mask_and_renormalize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Resnet.ResNet.mask_and_renormalize" title="Link to this definition">¶</a></dt>
+<dd><p>Masks and renormalizes the policy using the Softmax function.</p>
+<p>This method applies a mask to the policy to exclude invalid moves, then renormalizes
+the policy using the Softmax function. It can handle both batched and unbatched inputs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_input</strong> (<em>torch.Tensor</em>) – Input tensor representing the state, either batched (3D) or unbatched (2D).</p></li>
+<li><p><strong>unrenorm_policy</strong> (<em>torch.Tensor</em>) – Unrenormalized policy tensor to be masked and renormalized.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Masked and renormalized policy tensor.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Resnet.ResNet.prepare_data">
+<span class="sig-name descname"><span class="pre">prepare_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opponent_actions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/Resnet.html#ResNet.prepare_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Resnet.ResNet.prepare_data" title="Link to this definition">¶</a></dt>
+<dd><p>Prepares input data for a neural network model by incorporating current and opponent actions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_input</strong> (<em>torch.Tensor</em>) – The state of the game.</p></li>
+<li><p><strong>current_actions</strong> (<em>list</em><em> or </em><em>torch.Tensor</em><em>, </em><em>optional</em>) – Actions taken by the current player. For self-play, it is a list of tuples with coordinates of actions.
+For training, it is a matrix of dimensions (max_size, max_size) with +1 at action coordinates.</p></li>
+<li><p><strong>opponent_actions</strong> (<em>list</em><em> or </em><em>torch.Tensor</em><em>, </em><em>optional</em>) – Actions taken by the opponent player. For self-play, it is a list of tuples with coordinates of actions.
+For training, it is a matrix of dimensions (max_size, max_size) with -1 at action coordinates.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The modified input data after processing, which includes the current player’s actions, opponent’s actions,
+the original input state, and a coordinates matrix stacked together.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Resnet.ResNet.set_device">
+<span class="sig-name descname"><span class="pre">set_device</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Resnet.html#ResNet.set_device"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Resnet.ResNet.set_device" title="Link to this definition">¶</a></dt>
+<dd><p>Set the device for the PyTorch model based on the specified model device and availability.</p>
+<p>This function updates the model to use ‘mps’ if specified and available, otherwise ‘cuda’
+if specified and available, and defaults to ‘cpu’ if neither is available.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>None</strong></p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Resnet.ResNet.set_seed">
+<span class="sig-name descname"><span class="pre">set_seed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/Resnet.html#ResNet.set_seed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#Resnet.ResNet.set_seed" title="Link to this definition">¶</a></dt>
+<dd><p>Set all possible seeds to make the experiment reproducibol</p>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-Alpha_Chomp_Env"></span></section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">AlphaZeroChomp</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">AlphaZeroChomp</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#main.CustomArgumentParser"><code class="docutils literal notranslate"><span class="pre">CustomArgumentParser</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Resnet.ResBlock"><code class="docutils literal notranslate"><span class="pre">ResBlock</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Resnet.ResNet"><code class="docutils literal notranslate"><span class="pre">ResNet</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to AlphaZeroChomp’s documentation!</a></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Alessandro Canzonieri.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/modules.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

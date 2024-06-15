@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>main &#8212; AlphaZeroChomp 1.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=61cd365c" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=12dfc556" />
+    <script src="../_static/documentation_options.js?v=8d563738"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for main</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">Alpha_Chomp_Env</span> <span class="kn">import</span> <span class="n">AlphaChompEnv</span>
+<span class="kn">from</span> <span class="nn">Resnet</span> <span class="kn">import</span> <span class="n">ResNet</span>
+<span class="kn">from</span> <span class="nn">Alpha_GraphMCTS</span> <span class="kn">import</span> <span class="n">GraphMCTS</span>
+<span class="kn">from</span> <span class="nn">AlphaZero</span> <span class="kn">import</span> <span class="n">AlphaZeroChomp</span>
+
+
+
+<div class="viewcode-block" id="CustomArgumentParser">
+<a class="viewcode-back" href="../modules.html#main.CustomArgumentParser">[docs]</a>
+<span class="k">class</span> <span class="nc">CustomArgumentParser</span><span class="p">(</span><span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">):</span>
+<div class="viewcode-block" id="CustomArgumentParser.error">
+<a class="viewcode-back" href="../modules.html#main.CustomArgumentParser.error">[docs]</a>
+    <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">print_help</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Error: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Invalid value for --mode. Allowed values are &#39;play&#39; or &#39;train_and_play&#39;.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span></div>
+</div>
+
+
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="nf">parse_arguments</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The function `parse_arguments` uses the `argparse` module in Python to define and parse</span>
+<span class="sd">        command-line arguments for a program related to AlphaZero Chomp.</span>
+<span class="sd">        :return: The `parse_arguments` function is returning the parsed arguments from the command line</span>
+<span class="sd">        using the `argparse` module in Python.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s1">&#39;AlphaZero Chomp&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;--mode&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;play&#39;</span><span class="p">,</span> <span class="s1">&#39;train_and_play&#39;</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;play&#39;</span><span class="p">,</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Choose whether to play a game or train the neural network and then play a game&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+
+
+    <span class="n">args</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;min_size&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>      <span class="c1">#It&#39;s highly suggested to set min_size = 2</span>
+        <span class="s1">&#39;max_size&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>      <span class="c1">#The maximum size of the game grid or game board</span>
+        <span class="s1">&#39;save_data_env&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;model_device&#39;</span><span class="p">:</span> <span class="s1">&#39;cpu&#39;</span><span class="p">,</span>  <span class="c1">#Device requested for the model. Supports &#39;cpu&#39; or &#39;mps&#39;. To train on &#39;mps&#39; set &#39;MCTS_set_equal_prior&#39; = True</span>
+        <span class="s1">&#39;device&#39;</span><span class="p">:</span> <span class="s1">&#39;cpu&#39;</span><span class="p">,</span>    <span class="c1">#Device for other operations Graph-MCTS search, tipically &#39;cpu&#39;</span>
+        <span class="s1">&#39;verbose_A_game&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>    <span class="c1">#Bool: if AlphaChompEnv is verbose</span>
+        <span class="s1">&#39;verbose_mcts&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>     <span class="c1">#Bool: if GraphMCTS is verbose</span>
+        <span class="s1">&#39;verbose_resnet&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>     <span class="c1">#Bool: if Resnet is verbose</span>
+        <span class="s1">&#39;verbose_Alphazero&#39;</span> <span class="p">:</span> <span class="kc">False</span><span class="p">,</span>    <span class="c1">#Bool: if Alphazero is verbose</span>
+        <span class="s1">&#39;verbose_Play&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>      <span class="c1">#Bool: prints more when playing</span>
+        <span class="s1">&#39;C&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>     <span class="c1">#UCB coefficient to balance exploration/exploitation</span>
+        <span class="s1">&#39;MCTS_num_searches&#39;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>    <span class="c1">#How many GraphMCTS searchs to choose 1 move to be played in SelfPlay</span>
+        <span class="s1">&#39;learn_iterations&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>     <span class="c1">#How many Selplay and Training</span>
+        <span class="s1">&#39;selfPlay_iterations&#39;</span> <span class="p">:</span> <span class="mi">128</span><span class="p">,</span>     <span class="c1">#Number of games that if will play against itself for every SelfPlay. It&#39;s recomended to set selfPlay_iterations ≈ 50 + max_size**2</span>
+        <span class="s1">&#39;seflPlay_subgrids&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>      <span class="c1">#If True, allow SelfPlay over all subgrids of the biggest state Board</span>
+        <span class="s1">&#39;epochs&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>       <span class="c1">#Training epochs</span>
+        <span class="s1">&#39;shuffle_replaybuffer&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>   <span class="c1"># Bool: to shuffle or not the training Data befor training</span>
+        <span class="s1">&#39;num_hidden&#39;</span> <span class="p">:</span> <span class="mi">10</span><span class="p">,</span>      <span class="c1">#Number of hidden convolution layers</span>
+        <span class="s1">&#39;num_resBlocks&#39;</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span>        <span class="c1">#Number of resonants blocks in Resnet Model</span>
+        <span class="s1">&#39;weight_decay&#39;</span> <span class="p">:</span> <span class="mf">0.0001</span><span class="p">,</span>    <span class="c1">#Weight_decay for loss normalization</span>
+        <span class="s1">&#39;temperature&#39;</span> <span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span>    <span class="c1">#from 0 to +inf. Increase exploration in SelfPlay</span>
+        <span class="s1">&#39;MCTS_add_dirich_noise_par&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="c1">#if 0 No dirch_noise, if 1 dirch_noise only to root_node = (torch.ones(max_size, max_size)), if &gt;1  dirch_noise to every node</span>
+        <span class="s1">&#39;dirichlet_epsilon&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>   <span class="c1">#epsilon for dirchlet noise</span>
+        <span class="s1">&#39;dirichlet_alpha&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>     <span class="c1">#alpha for dirchlet noise</span>
+        <span class="s1">&#39;seed&#39;</span> <span class="p">:</span> <span class="mi">42</span><span class="p">,</span>    <span class="c1">#Random seed for reproducibility</span>
+        <span class="s1">&#39;MCTS_only_path_backpropagation&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">,</span>     <span class="c1">#If is desidered to backpropagate only trough path or trough eveery node</span>
+        <span class="s1">&#39;MCTS_best_child_decay&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>   <span class="c1">#If you want to reset the best_child and best_ucb every treshold visits of a node</span>
+        <span class="s1">&#39;MCTS_updating_children_prior&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>    <span class="c1">#If True updates the action_prob of children of the starting_node which than updates in the UCB formula</span>
+        <span class="s1">&#39;MCTS_progress_disabled&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;MCTS_set_equal_prior&#39;</span><span class="p">:</span><span class="kc">False</span><span class="p">,</span>    <span class="c1">#BOOL: Set equal prior for all child node when expanded. Uses Resnet.mask_and_renorm_NoSoftmax if set to True</span>
+        <span class="s1">&#39;dis_Splay_progress&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>     <span class="c1">#Bool: Display progrss bar for SelfPlay</span>
+        <span class="s1">&#39;dis_Train_progress&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>     <span class="c1">#Bool: Display progrss bar for Training</span>
+        <span class="s1">&#39;batch_size&#39;</span><span class="p">:</span> <span class="mi">64</span><span class="p">,</span>   <span class="c1">#Batch_size dimension. It&#39;s also implemented dynamic batching</span>
+        <span class="s1">&#39;lr&#39;</span> <span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span>    <span class="c1">#Learning rate of the optimizer</span>
+        <span class="s1">&#39;normal_move_reward&#39;</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>    <span class="c1">#The reward of a legal move apart from winning\loosing move</span>
+
+    <span class="p">}</span>
+    <span class="c1"># Instantiating stuff...</span>
+    <span class="n">resnet</span> <span class="o">=</span> <span class="n">ResNet</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">Alpha_game</span> <span class="o">=</span> <span class="n">AlphaChompEnv</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">Alpha_MCTS</span> <span class="o">=</span> <span class="n">GraphMCTS</span><span class="p">(</span><span class="n">Alpha_game</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">resnet</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">alphazero</span> <span class="o">=</span> <span class="n">AlphaZeroChomp</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">resnet</span><span class="p">,</span> <span class="n">Alpha_game</span><span class="p">,</span> <span class="n">Alpha_MCTS</span><span class="p">)</span>
+
+    <span class="n">cli_args</span> <span class="o">=</span> <span class="n">parse_arguments</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">cli_args</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;train_and_play&#39;</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Training the neural network and then playing the game...&quot;</span><span class="p">)</span>
+        <span class="n">alphazero</span><span class="o">.</span><span class="n">learn</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Playing the game...&quot;</span><span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">alphazero</span><span class="o">.</span><span class="n">play_game</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">cli_args</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;play&#39;</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Playing the game...&quot;</span><span class="p">)</span>
+        <span class="n">alphazero</span><span class="o">.</span><span class="n">play_game</span><span class="p">()</span>
+
+
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+
+
+
+
+
+
+<span class="c1">#</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">AlphaZeroChomp</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">AlphaZeroChomp</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Alessandro Canzonieri.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

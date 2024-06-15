@@ -26,12 +26,24 @@ class AlphaChompEnv():
 
     def get_given_state(self, size = None):
         """
-        This function generates a state grid with specified dimensions and valid moves for a game.
-        
-        :param size: The `size` parameter in the `get_given_state` function is used to specify the
-        dimensions of the state matrix that will be created. If `size` is not provided (i.e., it is `None`),
-        the function will default to using the maximum size specified in the `args`
-        :return: The function `get_given_state` returns three values: `state`, `valid_moves`, and `looser`.
+        Generate a state grid with specified dimensions and valid moves for a game.
+
+        Parameters
+        ----------
+        size : tuple of int, optional
+            The dimensions of the state matrix to be created. If not provided, the function defaults to using
+            the maximum size specified in `self.args`.
+
+        Returns
+        -------
+        tuple
+            A tuple containing the following:
+            - state : torch.Tensor
+                The state matrix with dimensions `max_size x max_size`, where the specified area is filled with ones.
+            - valid_moves : list of tuple
+                A list of valid moves (i.e., coordinates) in the state matrix where the value is 1.
+            - looser : bool
+                A boolean value indicating whether the current state results in a loss.
         """
         if size is None:
             h = self.args['max_size']
@@ -49,18 +61,19 @@ class AlphaChompEnv():
 
     def check_looser(self, state, action):
         """
-        The function `check_looser` determines if a player is the loser based on the game state and action
-        taken.
-        
-        :param state: The `state` parameter seems to represent a tensor or matrix of size `max_size x
-        max_size` using PyTorch. The function `check_looser` checks if the game state indicates a losing
-        condition based on the following conditions:
-        :param action: The `action` parameter in the `check_looser` function represents the action taken
-        in the current state of the game. It is a tuple that specifies the row and column where a move is
-        being made on the game board. In the provided code snippet, the function checks if the action is
-        equal
-        :return: The function `check_looser` returns a boolean value indicating whether the player is
-        considered a "looser" based on the given state and action.
+        Determine if a player is the loser based on the game state and action taken.
+
+        Parameters
+        ----------
+        state : torch.Tensor
+            A tensor of size `max_size x max_size` representing the current state of the game.
+        action : tuple of int
+            A tuple specifying the row and column where a move is being made on the game board.
+
+        Returns
+        -------
+        bool
+            A boolean value indicating whether the player is considered a "looser" based on the given state and action.
         """
 
         if torch.equal(torch.zeros(self.args['max_size'],self.args['max_size']), state):
@@ -73,35 +86,46 @@ class AlphaChompEnv():
 
     def get_valid_moves(self, state):
         """
-        The function `get_valid_moves` returns a list of valid moves based on the input state where the
-        value is equal to 1.
-        
-        :param state: It looks like the `get_valid_moves` function is designed to return the coordinates of
-        valid moves based on a given state. The state parameter seems to be a 2D numpy array representing
-        the game board or grid where the value 1 indicates a valid move
-        :return: The `get_valid_moves` function returns a list of tuples, where each tuple represents the
-        coordinates of a valid move in the given `state` array. The valid moves are determined by finding
-        the positions in the array where the value is equal to 1.
+        Return a list of valid moves based on the input state where the value is equal to 1.
+
+        Parameters
+        ----------
+        state : torch.Tensor
+            A 2D tensor representing the game board or grid where the value 1 indicates a valid move.
+
+        Returns
+        -------
+        list of tuple of int
+            A list of tuples, where each tuple represents the coordinates of a valid move in the given `state` tensor.
         """
         h = state.shape[1]
         w = state.shape[0]
         valid_moves = [(i, j) for i in range(w) for j in range(h) if state[i, j] == 1]
         return valid_moves
 
- 
+
     def get_next_state(self, state, action):
         """
-        The function `get_next_state` updates the game state based on the given action and returns the
-        updated state, valid moves, information about the loser, and the reward.
-        
-        :param state: The `state` parameter in the `get_next_state` function represents the current state of
-        the game board. It is likely a 2D array or matrix that represents the positions of pieces or tokens
-        in the game. The function takes this state as input and updates it based on the provided `action
-        :param action: The `action` parameter in the `get_next_state` method represents the action that will
-        be taken in the current state of the game. It is expected to be a tuple containing the coordinates
-        of the cell where the action will be performed, for example, `(row, column)`
-        :return: The function `get_next_state` is returning the updated `state`, the list of `valid_moves`,
-        the `looser` (result of checking for a loser), and the `reward`.
+        Update the game state based on the given action and return the updated state, valid moves,
+        information about the loser, and the reward.
+
+        Parameters
+        ----------
+        state : torch.Tensor
+            A 2D tensor representing the current state of the game board.
+        action : tuple of int
+            A tuple containing the coordinates (row, column) where the action will be performed.
+
+        Returns
+        -------
+        state : torch.Tensor
+            The updated game state.
+        valid_moves : list of tuple of int
+            A list of valid moves after the action is performed.
+        looser : bool
+            The result of checking for a loser.
+        reward : float
+            The reward associated with the action.
         """
         #action = list(action)
         valid_moves = self.get_valid_moves(state)
@@ -118,16 +142,21 @@ class AlphaChompEnv():
 
         return state, valid_moves, looser, reward
 
+
+
     def get_reward(self, action):
         """
-        The function `get_reward` assigns different rewards based on the action taken by the player.
-        
-        :param action: The `action` parameter in the `get_reward` method represents the action taken by a
-        player in a game. The method calculates and returns a reward based on the action provided. If the
-        action is `(0,0)`, the player receives a `looser_reward` of -1. Otherwise
-        :return: The function `get_reward` returns the reward for the current player based on the action
-        taken. If the action is (0,0), the reward returned is the `looser_reward` which is -1. Otherwise,
-        the reward returned is the `normal_move_reward` specified in the arguments.
+        Assign rewards based on the action taken by the player.
+
+        Parameters
+        ----------
+        action : tuple of int
+            A tuple containing the coordinates (row, column) where the action is performed.
+
+        Returns
+        -------
+        reward_curr_player : int
+            The reward for the current player based on the action taken.
         """
         looser_reward = -1
         winning_reward = 1
@@ -139,30 +168,27 @@ class AlphaChompEnv():
             reward_curr_player = normal_move_reward
         return reward_curr_player
 
-   
+
     def print_state(self, state,  valid_moves, looser, action = None, reward = None):
         """
-        This function prints the current state of a game, valid moves, information about the loser, the
-        action taken, and the reward received by the current player.
-        
-        :param state: The `state` parameter represents the current state of the game. It could be a game
-        board, a game state, or any relevant information about the game at a particular point in time
-        :param valid_moves: Valid_moves are the possible moves that a player can make in the current state
-        of the game. These moves are valid based on the rules of the game and the current state of the game
-        board. The `valid_moves` parameter in the `print_state` function is used to display these valid
-        moves to
-        :param looser: It looks like there is a typo in the function parameter name. It should be "loser"
-        instead of "looser". The correct definition should be:
-        :param action: The `action` parameter in the `print_state` function represents the action taken by
-        the player in the current state of the game. It is an optional parameter that can be passed to the
-        function to display the action taken by the player. If provided, the function will print out the
-        action along with
-        :param reward: The `reward` parameter in the `print_state` function is used to display the reward
-        for the current player. If the `reward` parameter is provided when calling the function, it will
-        print the reward value for the current player. If the `reward` parameter is not provided, this
-        information will
-        :return: The `print_state` function does not explicitly return any value. It simply prints out
-        information about the state, valid moves, looser, action, and reward.
+        Print the current game state, valid moves, loser status, action taken, and reward received.
+
+        Parameters
+        ----------
+        state : torch.Tensor
+            The current state of the game board.
+        valid_moves : list of tuple of int
+            The possible moves that a player can make in the current state.
+        looser : bool
+            Indicates if the current player is the loser.
+        action : tuple of int, optional
+            The action taken by the player (default is None).
+        reward : int, optional
+            The reward received by the current player (default is None).
+
+        Returns
+        -------
+        None
         """
         print(f"\nState: \n{state}\n")
         print(f"\nValid_moves: {valid_moves}")
@@ -210,16 +236,20 @@ class AlphaChompEnv():
 
     def display_game(self, state, valid_moves, looser):
         """
-        The `display_game` function generates a visual representation of the Alpha Chomp game state,
-        including the board, valid moves, and information about the loser.
-        
-        :param state: The `state` parameter represents the current state of the game. It is a tensor that
-        contains the game board information
-        :param valid_moves: Valid_moves is a list of tuples representing the valid moves that can be made in
-        the game. Each tuple contains the coordinates (i, j) of a valid move on the game board
-        :param looser: The `looser` parameter in the `display_game` function is used to indicate whether
-        there is a loser in the game. If `looser` is `True`, it means that the current player is the loser.
-        If `looser` is `False`, it means that there is no
+        Generate a visual representation of the Alpha Chomp game state.
+
+        Parameters
+        ----------
+        state : torch.Tensor
+            The current state of the game board.
+        valid_moves : list of tuple of int
+            The list of valid moves as (row, column) coordinates.
+        looser : bool
+            Indicates if the current player is the loser.
+
+        Returns
+        -------
+        None
         """
         state_np = state.cpu().numpy()
         h, w = state_np.shape

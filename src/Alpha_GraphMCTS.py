@@ -50,15 +50,19 @@ class Node:
 
     def is_ending_node(self, node_state=None):
         """
-        The function `is_ending_node` checks if a given node state or the current state is equal to a tensor
-        of zeros.
+        Check if a given node state or the current state is equal to a tensor of zeros.
 
-        :param node_state: The `node_state` parameter represents the state of a node in your code. It is a
-        tensor with dimensions `max_size x max_size`. The function `is_ending_node` checks if the given
-        `node_state` (or the default `self.state` if `node_state` is not
-        :return: The `is_ending_node` function returns a boolean value indicating whether the input
-        `node_state` (or the default `self.state` if `node_state` is not provided) is equal to a tensor of
-        zeros with dimensions `self.args['max_size']` by `self.args['max_size']`.
+        Parameters
+        ----------
+        node_state : torch.Tensor, optional
+            The state of a node. It is a tensor with dimensions `max_size x max_size`.
+            If not provided, the default is `self.state`.
+
+        Returns
+        -------
+        bool
+            True if the input `node_state` (or the default `self.state` if `node_state` is not provided)
+            is equal to a tensor of zeros with dimensions `self.args['max_size']` by `self.args['max_size']`.
         """
         if node_state is not None:
             return torch.equal(torch.zeros(self.args['max_size'], self.args['max_size']), node_state)
@@ -78,24 +82,39 @@ class Node:
 
     def is_fully_expanded(self):
         """
-        The function `is_fully_expanded` checks if a state is fully expanded based on certain conditions.
-        :return: The function `is_fully_expanded` returns a boolean value. It checks if the state is fully
-        expanded by comparing it with a tensor of zeros of size `max_size x max_size`, or if the state is
-        `None`, or if there are no more expandable moves left.
+        Check if a state is fully expanded based on certain conditions.
+
+        Returns
+        -------
+        bool
+            True if the state is fully expanded, which is determined by:
+            - The state being equal to a tensor of zeros of size `max_size x max_size`.
+            - The state being `None`.
+            - No more expandable moves left.
         """
         return torch.equal(torch.zeros(self.args['max_size'], self.args['max_size']), self.state.clone()) or self is None or len(self.expandable_moves) == 0
 
     def select(self, node_storage):
         """
-        The `select` function iterates through children nodes to find the one with the highest UCB value and
-        returns it along with the corresponding action taken.
+        Iterate through children nodes to find the one with the highest UCB value and return it along with the
+        corresponding action taken.
 
-        :param node_storage: It looks like the `select` method is part of a larger class or function related
-        to a Monte Carlo Tree Search (MCTS) algorithm. The method is responsible for selecting the best
-        child node based on some criteria
-        :return: The `select` function returns either the best child node along with the action taken, or
-        the current node along with a `None` action if there are no children or if the node is not fully
-        expanded.
+        Parameters
+        ----------
+        node_storage : dict
+            A dictionary used to keep track of nodes that have already been visited or expanded during the
+            search process.
+
+        Returns
+        -------
+        tuple
+            The best child node along with the action taken, or the current node along with a `None` action
+            if there are no children or if the node is not fully expanded.
+
+        Raises
+        ------
+        ValueError
+            If the function encounters an unexpected condition.
         """
         self.best_child_decay() if self.args['MCTS_best_child_decay'] else None
 
@@ -119,17 +138,36 @@ class Node:
 
     def get_ucb(self, child):
         """
-        The function `get_ucb` calculates the Upper Confidence Bound (UCB) value for a given child node in
-        a Monte Carlo Tree Search algorithm, taking into account the child's visit count, score, and action
-        probability.
+        Calculate the Upper Confidence Bound (UCB) value for a given child node in a Monte Carlo Tree Search
+        algorithm.
 
-        :param child: It looks like the code you provided is a method for calculating the Upper Confidence
-        Bound (UCB) value for a child node in a Monte Carlo Tree Search algorithm. The UCB value is used to
-        balance exploration and exploitation in the search process
-        :return: The `get_ucb` method is returning the Upper Confidence Bound (UCB) value for a given child
-        node in the context of a Monte Carlo Tree Search (MCTS) algorithm. The UCB value is calculated
-        based on the child's visit count, score, and other parameters such as the exploration constant `C`.
-        The formula used in the method combines these factors to determine the UCB value
+        Parameters
+        ----------
+        child : Node
+            The child node for which the UCB value is being calculated. The node must have attributes
+            `visit_count`, `score`, and `action_prob`.
+
+        Returns
+        -------
+        float
+            The Upper Confidence Bound (UCB) value for the given child node. The UCB value is calculated based
+            on the child's visit count, score, and the exploration constant `C`. The formula used combines these
+            factors to determine the UCB value.
+
+        Notes
+        -----
+        The UCB value is used to balance exploration and exploitation in the search process. A handcrafted UCB
+        formula is used in this method, which takes into account the child's score to avoid favoring leaf nodes
+        with high visit counts.
+
+        If the child's visit count is greater than 0, the Q value is calculated as `1 - (((child.score /
+        child.visit_count) + 1) / 2)`, which switches the viewpoint to the opponent. If the visit count is 0,
+        the Q value is set to 0.
+
+        The final UCB value is computed as:
+
+        .. math::
+            \text{ucb} = q\_value + C \times \left( \frac{\sqrt{\text{self.visit_count}} \times \text{child.score}}{\text{child.visit_count} + 1} \right) \times \text{self.children[child].action_prob}
         """
         if child.visit_count > 0:
             # 0 < q < 1 and switch viewpoint to the opponent
@@ -140,27 +178,49 @@ class Node:
         '''Handcrafted UCB formula. I added child.score at the numerator so the MCTS will take in consideration
         the score of aech child. Otherwise the last child, (torch.zeros(max_size, max_size)) which is the leaf node
          of the GraphTree has the highest visit count cause every times you end up there and this mechanism breaks the effective search'''
-        ucb = q_value+self.args['C']*((np.sqrt(self.visit_count)*child.score)/(child.visit_count+ 1)) \
+        ucb = q_value+self.args['C']*((np.sqrt(self.visit_count)*child.score/(child.visit_count+ 1))) \
             * self.children[child].action_prob
         return ucb
 
     def expand(self, node_storage, masked_policy):
         """
-        The `expand` function in Python is used to expand a node in a tree structure based on a given
-        policy, creating child nodes if necessary and updating the node storage accordingly.
+        Expand a node in a tree structure based on a given policy, creating child nodes if necessary and
+        updating the node storage accordingly.
 
-        :param node_storage: The `node_storage` parameter in the `expand` method is a dictionary that
-        stores nodes based on their unique keys. This dictionary is used to keep track of nodes that have
-        already been visited or expanded during the search process. If a node is not already in the
-        `node_storage`, it is added
-        :param masked_policy: The `masked_policy` parameter in the `expand` method seems to represent a
-        list of action probabilities that have been masked in some way. The method then uses these
-        probabilities to determine which actions to take during the expansion phase of the Monte Carlo
-        Tree Search (MCTS) algorithm
-        :return: In this `expand` method, a `Node` object and the `node_storage` dictionary are being
-        returned. The `Node` object represents a child node that has been expanded from the current node,
-        and the `node_storage` dictionary contains information about all nodes encountered during the
-        expansion process.
+        Parameters
+        ----------
+        node_storage : dict
+            A dictionary used to keep track of nodes that have already been visited or expanded during the
+            search process. If a node is not already in the `node_storage`, it is added.
+        masked_policy : list of float
+            List of action probabilities that have been masked in some way. The method uses these probabilities
+            to determine which actions to take during the expansion phase of the Monte Carlo Tree Search (MCTS)
+            algorithm.
+
+        Returns
+        -------
+        Node
+            The `Node` object represents a child node that has been expanded from the current node.
+        dict
+            The `node_storage` dictionary contains information about all nodes encountered during the expansion
+            process.
+
+        Notes
+        -----
+        The function checks if the current node is fully expanded. If not, it uses the masked policy to
+        determine which actions to take. If the node is fully expanded, it returns the current node and
+        `node_storage`.
+
+        If `MCTS_set_equal_prior` is `False`, the function iterates over the `masked_policy`, converting action
+        numbers to coordinates, and expanding child nodes based on the action probabilities. If the action
+        probability is greater than 0 and the action is in `expandable_moves`, it removes the action from
+        `expandable_moves`, gets the next state, and either retrieves or creates a child node, adding it to the
+        node storage.
+
+        If `MCTS_set_equal_prior` is `True`, the function assigns equal probability to each valid move and
+        performs similar steps to expand child nodes.
+
+        If the node is fully expanded, it returns the current node and `node_storage`.
         """
         #Check if it's already in node_storage
         node_key = self.get_state_key(self.state.clone())
@@ -213,11 +273,24 @@ class Node:
 
     def simulate(self):
         """
-        This function simulates a game by making random moves until a player loses, updating the score
-        accordingly.
-        :return: The `simulate` method returns the reward value when a looser is detected during the
-        simulation. If a looser is not detected, the method continues with a rollout simulation until a
-        looser is found, and then returns the reward value.
+        Simulate a game by making random moves until a player loses, updating the score accordingly.
+
+        Returns
+        -------
+        int
+            The reward value when a looser is detected during the simulation. If a looser is not detected,
+            the method continues with a rollout simulation until a looser is found, and then returns the
+            reward value.
+
+        Notes
+        -----
+        The function first checks for a looser using `self.A_game.get_reward_and_looser` with the current state
+        and action. If a looser is found, the function updates the score and returns the reward.
+
+        If no looser is found, the function enters a rollout simulation loop where it makes random moves
+        until a looser is detected. The state and valid moves are updated at each step, and the turn counter
+        is incremented. If a looser is found during the rollout, the reward is adjusted based on the turn
+        number and returned.
         """
         looser, reward = self.A_game.get_reward_and_looser(self.state, self.action_taken)
         self.score += reward
@@ -240,15 +313,26 @@ class Node:
 
     def backpropagate(self, reward, parent_path):
         """
-        The `backpropagate` function updates the rewards of nodes in a tree structure based on a given
-        reward and parent path, with an option for only propagating along a specific path.
+        Update the rewards of nodes in a tree structure based on a given reward and parent path, with an option
+        for only propagating along a specific path.
 
-        :param reward: The `reward` parameter in the `backpropagate` method represents the reward signal
-        that is being propagated back through the tree during the reinforcement learning process. It is
-        used to update the values associated with each node in the tree based on the outcome of the
-        simulation or game that was played
-        :param parent_path: The `backpropagate` method is used to update the rewards of the nodes in the
-        tree based on the received reward and the path taken to reach the current node
+        Parameters
+        ----------
+        reward : float
+            The reward signal that is being propagated back through the tree during the reinforcement learning process.
+            It is used to update the values associated with each node in the tree based on the outcome of the
+            simulation or game that was played.
+        parent_path : list
+            The path taken to reach the current node, represented as a list of parent nodes and the corresponding
+            actions taken to traverse from parent to child.
+
+        Notes
+        -----
+        The `backpropagate` method updates the rewards of the nodes in the tree based on the received reward and
+        the path taken to reach the current node. If the `MCTS_only_path_backpropagation` option is enabled, the
+        method only propagates the reward along the specific path taken to reach the current node. Otherwise, it
+        propagates the reward to all parent nodes. The reward is negated at each step to alternate between
+        maximizing and minimizing nodes.
         """
         only_path = self.args['MCTS_only_path_backpropagation']
         self.update(reward)
@@ -271,27 +355,49 @@ class Node:
 
     def __str__(self):
         """
-        The `__str__` function returns a string representation of an object with information about its
-        state, visit count, score, number of children, parents, and expandable moves.
-        :return: The `__str__` method is returning a formatted string that includes the state, visit
-        count, score, number of children, number of parents, and number of expandable moves of the
-        object.
+        Return a string representation of an object with information about its state, visit count, score,
+        number of children, parents, and expandable moves.
+
+        Returns
+        -------
+        str
+            A formatted string that includes the state, visit count, score, number of children, number of parents,
+            and number of expandable moves of the object.
+
+        Notes
+        -----
+        The `__str__` method provides a human-readable representation of the object's key attributes, making it
+        easier to inspect the state and properties of the object during debugging or logging.
         """
         return f"\nState: {self.state}, \nVisits: {self.visit_count}, Value: {self.score}, how many children: {len(self.children)}" \
                f"\nHow many Parents: {len(self.parents)}, How many Exp_moves left: {len(self.expandable_moves)}"
 
     def get_state_key(self, state):
         """
-        The function `get_state_key` takes a state, converts it to a byte array, calculates its SHA-1
-        hash, and returns the hexadecimal representation of the hash.
+        Convert a state to a unique key by hashing its byte representation.
 
-        :param state: The `state` parameter in the `get_state_key` function seems to be a numpy array
-        that is being converted to bytes and then hashed using the SHA-1 algorithm to generate a
-        hexadecimal digest. This function is likely used to create a unique key based on the state of the
-        numpy array for some
-        :return: The function `get_state_key` takes a `state` as input, converts it to a byte array using
-        NumPy, calculates the SHA-1 hash of the byte array, and returns the hexadecimal representation of
-        the hash.
+        Parameters
+        ----------
+        state : numpy.ndarray
+            The state to be converted to a unique key. This state is expected to be a NumPy array.
+
+        Returns
+        -------
+        str
+            The hexadecimal representation of the SHA-1 hash of the byte array corresponding to the input state.
+
+        Notes
+        -----
+        This function is useful for creating a unique identifier for a given state, which can be used in
+        various applications such as caching, lookup tables, or ensuring uniqueness of states in a search
+        algorithm.
+
+        Examples
+        --------
+        >>> state = np.array([[0, 1], [1, 0]])
+        >>> key = obj.get_state_key(state)
+        >>> print(key)
+        'f7c3bc1d808e04732adf679965ccc34ca7ae3441'
         """
         c = np.array(state).tobytes()
         return hashlib.sha1(c).hexdigest()
@@ -305,8 +411,30 @@ class Node:
 
     def best_child_decay(self):
         """
-        The function `best_child_decay` resets the `best_child` and `best_ucb` variables after a certain
-        number of visits.
+        Reset the `best_child` and `best_ucb` variables periodically based on the visit count.
+
+        Notes
+        -----
+        This function resets the `best_child` and `best_ucb` attributes after a certain number of visits,
+        determined by the threshold value. This is useful in algorithms like Monte Carlo Tree Search (MCTS)
+        to ensure that the search does not overly favor previously selected children.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        >>> obj.visit_count = 10
+        >>> obj.best_child_decay()
+        >>> print(obj.best_child)
+        None
+        >>> print(obj.best_ucb)
+        -inf
         """
         treshold = 10
         #every treshold visits reset best_child and best_ucb
@@ -323,7 +451,6 @@ class GraphMCTS:
         self.args = args
         self.node_storage = {}  # hashed_State : Node
         self.parent_path_mcts = []  #Nodes we have walked trought
-        self.batch_norm = nn.BatchNorm2d(1)  # BatchNorm2d for a single channel
         self.current_actions = []
         self.opponent_actions = []
         self.turn = 0
@@ -331,22 +458,38 @@ class GraphMCTS:
     @torch.no_grad()
     def search(self, state, playable_cells, start_node=None):
         """
-        The `search` function in Python uses Monte Carlo Tree Search (MCTS) to find the best move in a game
-        state, updating node values and probabilities based on the search results.
+        Perform Monte Carlo Tree Search (MCTS) to find the best move in a given game state.
 
-        :param state: The `search` method you provided seems to be implementing the Monte Carlo Tree Search
-        (MCTS) algorithm for decision-making in a game. The method takes several parameters and performs a
-        search to find the best action to take based on the current state of the game
-        :param playable_cells: The `playable_cells` parameter in the `search` method represents the cells on
-        the game board where a player can make a move. The method uses this information to determine the
-        possible actions or moves that can
-        :param start_node: The `start_node` parameter in the `search` method is used to specify a starting
-        node for the Monte Carlo Tree Search (MCTS) algorithm. If a `start_node` is provided, the search
-        will begin from that node instead of starting from scratch. This can be useful in certain scenarios
-        :return: The `search` method returns two tensors: `action_probs` and `action_probs_value`. These
-        tensors represent the action probabilities calculated during the Monte Carlo Tree Search (MCTS)
-        algorithm. The `action_probs` tensor contains the probabilities of each possible action, while the
-        `action_probs_value` tensor contains the values associated with those probabilities.
+        Parameters
+        ----------
+        state : torch.tensor
+            The current state of the game represented as a tensor.
+        playable_cells : list of tuples
+            A tensor indicating the cells on the game board where a player can make a move.
+        start_node : Node, optional
+            The starting node for the search. If provided, the search will begin from this node instead of
+            starting from scratch (default is None).
+
+        Returns
+        -------
+        action_probs : torch.Tensor
+            A tensor containing the probabilities of each possible action.
+        action_probs_value : torch.Tensor
+            A tensor containing the values associated with the action probabilities.
+
+        Notes
+        -----
+        This method performs MCTS to evaluate possible actions in the game and update node values and
+        probabilities based on the search results. The search process includes selection, expansion,
+        simulation, and backpropagation phases.
+
+        Examples
+        --------
+        >>> state = torch.tensor([...])
+        >>> playable_cells = torch.tensor([...])
+        >>> action_probs, action_probs_value = search(state, playable_cells)
+        >>> print(action_probs)
+        >>> print(action_probs_value)
         """
         start_time = time.time()
 
@@ -377,7 +520,7 @@ class GraphMCTS:
             if looser is False:
                 self.collect_actions()  #Collect players actions
                 while not node.is_fully_expanded():
-                    masked_policy, policy, value = self.model(node.state.clone(), self.current_actions.copy(), self.opponent_actions.copy())
+                    masked_policy, policy, value = self.model(node.state.clone().to(self.model.device), self.current_actions.copy(), self.opponent_actions.copy())
                     #Expansion
                     exp_node, exp_node_storage_updated = node.expand(self.node_storage, masked_policy)
                     self.node_storage.update(exp_node_storage_updated)
@@ -430,9 +573,21 @@ class GraphMCTS:
         return action_probs, action_probs_value
 
     def masking_action_probs(self, action_probs, starting_node):
-        '''Masks the action probabilities using the state of the starting_node to avoid
-            that illegal action will be taken. The renormalization will be done later in the code.
-            This snippet of code masks square action_prob using square_node_state'''
+        """
+        Masks illegal action probabilities based on the state of the starting node.
+
+        Parameters
+        ----------
+        action_probs : torch.Tensor
+            Action probabilities for each possible action.
+        starting_node : Node
+            Starting node containing state information.
+
+        Returns
+        -------
+        torch.Tensor
+            Masked action probabilities.
+        """
         action_probs[starting_node.state.clone() == 0.] = float('-inf')
         return action_probs
 
@@ -448,12 +603,26 @@ class GraphMCTS:
     @staticmethod
     def get_state_key(state):
         '''Get the key of the hash table of a state'''
-        c = np.array(state).tobytes()
+        c = np.array(state.cpu()).tobytes()
         return hashlib.sha1(c).hexdigest()
 
     @staticmethod
     def build_graph(node, graph=None):
-        '''Build the graph of the GraphMCTS'''
+        """
+        Builds the graph of the GraphMCTS.
+
+        Parameters
+        ----------
+        node : Node
+            The current node from which to build the graph.
+        graph : networkx.DiGraph, optional
+            The graph to which nodes and edges are added. If None, a new directed graph is created.
+
+        Returns
+        -------
+        networkx.DiGraph
+            The graph with all nodes and edges added.
+        """
         if graph is None:
             graph = nx.DiGraph()
         if node not in graph:
@@ -467,7 +636,19 @@ class GraphMCTS:
 
     @staticmethod
     def visualize_mcts(root):
-        '''Build and visualize the graph of the GraphMCTS'''
+        """
+        Build and visualize the graph of the GraphMCTS.
+
+        Parameters
+        ----------
+        root : Node
+            The root node of the GraphMCTS from which the graph is built.
+
+        Returns
+        -------
+        None
+            This function does not return anything. It displays a visualization of the MCTS graph.
+        """
         G = GraphMCTS.build_graph(root)
         pos = nx.nx_agraph.graphviz_layout(G, prog='dot')
         labels = {node: data['label'] for node, data in G.nodes(data=True)}
@@ -483,9 +664,17 @@ class GraphMCTS:
 
 
     def collect_actions(self):
-        """Collect the actions of player 1 and player 2 from the parent_path_mcts. These action will be fed to the NN ResNet
-        model as a list of tuple and the model will transcribe that into matrices and stacking togheter in a sandwitch
-        with the state of the game"""
+        """
+        Collect the actions of player 1 and player 2 from the parent_path_mcts.
+
+        These actions will be fed to the ResNet model as a list of tuples. The model will transcribe
+        them into matrices and stack them together with the state of the game.
+
+        Raises
+        ------
+        ValueError
+            If an unexpected issue with the action or node state is encountered.
+        """
         prov_parent_path = self.parent_path_mcts.copy()
         prov_parent_path = prov_parent_path[:-1]    #The last element is in parent path 2 times, so i remove it
         self.current_actions = []
@@ -513,56 +702,74 @@ class GraphMCTS:
         column = action_number % self.args['max_size']
         return (row,column)
 
+
     def add_dirichlet_noise(self, node):
         """
-        The `add_dirichlet_noise` function adds Dirichlet noise to nodes based on specified conditions
-        before starting a search process.
+        Add Dirichlet noise to nodes before starting a search process based on specified conditions.
 
-        :param node: The `add_dirichlet_noise` function is used to add Dirichlet noise to a given node
-        before starting a search. The function takes into account the value of
-        `self.args['MCTS_add_dirich_noise_par']` to determine how the noise should be added:
-        Add the Dirichlert noise to the node before starting serach. If self.args['MCTS_add_dirich_noise_par'] > 1: it add Dirichlet Noise
-        to every node. If self.args['MCTS_add_dirich_noise_par'] == 1 it will add Dirichlet Noise ONLY to the root node (biggest matrix of ones).
-        If self.args['MCTS_add_dirich_noise_par'] == 0 it will add no noise to any node. We first calculate the policy, then we add the Noise
-        and then we expand the node setting the policy with dirichlet noise as action_prob of the children dictionary
+        Parameters
+        ----------
+        node : Node
+            The node to which Dirichlet noise will be added before starting a search.
+
+        Notes
+        -----
+        - If `self.args['MCTS_add_dirich_noise_par'] > 1`, Dirichlet noise is added to every node.
+        - If `self.args['MCTS_add_dirich_noise_par'] == 1`, Dirichlet noise is added only to the root node.
+        - If `self.args['MCTS_add_dirich_noise_par'] <= 0`, no Dirichlet noise is added.
+
+        The function first calculates the policy, then adds the noise, and then expands the node, setting the policy
+        with Dirichlet noise as `action_prob` of the children dictionary. It works with 'mps' using 'MCTS_set_equal_prior' = True.
         """
-        if self.args['MCTS_add_dirich_noise_par'] > 1:
-            #We add dirichlet noise to every node
 
-            masked_policy, _, value = self.model(node.state.clone())
 
-            dirch_policy = (1 - self.args['dirichlet_epsilon']) * masked_policy + self.args['dirichlet_epsilon'] \
-                * np.random.dirichlet([self.args['dirichlet_alpha']] * (self.args['max_size']**2))
+        if self.args['MCTS_add_dirich_noise_par'] > 1:      #We add dirichlet noise to every node
+            masked_policy, _, value = self.model(node.state.clone().to(self.model.device))
+            dirichlet_noise = torch.tensor(np.random.dirichlet([self.args['dirichlet_alpha']] * (self.args['max_size']**2)), dtype=torch.float32).to(self.model.device)
+            dirch_policy = (1 - self.args['dirichlet_epsilon']) * masked_policy + self.args['dirichlet_epsilon'] * dirichlet_noise
 
-            dirch_policy[node.state.clone().flatten() == 0.] = float('-inf')   #Masking
-            dirch_policy = F.softmax(dirch_policy, dim=0)     #Renormalization
+            #dirch_policy[node.state.clone().to(self.model.device).flatten() == 0.] = float('-inf')
+            #dirch_policy = F.softmax(dirch_policy, dim=0)
+            dirch_policy *= node.state.clone().to(self.model.device).flatten()
+            dirch_policy /= torch.sum(dirch_policy)
             while not node.is_fully_expanded():
                 exp_node, exp_node_storage_updated = node.expand(self.node_storage.copy(), dirch_policy)
                 self.node_storage.update(exp_node_storage_updated)
-
-        elif torch.equal(node.state.clone(), torch.ones(self.args['max_size'],self.args['max_size'])) and 0 < self.args['MCTS_add_dirich_noise_par'] <= 1:
+        elif torch.equal(node.state.clone(), torch.ones(self.args['max_size'], self.args['max_size'])) and 0 < self.args['MCTS_add_dirich_noise_par'] <= 1:
             #So that's root node and we add dirchlet noise only to root node
-            masked_policy, _, value = self.model(node.state.clone())
+            masked_policy, _, value = self.model(node.state.clone().to(self.model.device))
+            dirichlet_noise = torch.tensor(np.random.dirichlet([self.args['dirichlet_alpha']] * (self.args['max_size']**2)), dtype=torch.float32).to(self.model.device)
+            dirch_policy = (1 - self.args['dirichlet_epsilon']) * masked_policy + self.args['dirichlet_epsilon'] * dirichlet_noise
 
-            dirch_policy = (1 - self.args['dirichlet_epsilon']) * masked_policy + self.args['dirichlet_epsilon'] \
-                * np.random.dirichlet([self.args['dirichlet_alpha']] * (self.args['max_size']**2))
-
-            dirch_policy[node.state.clone().flatten() == 0.] = float('-inf')   #Masking
-            dirch_policy = F.softmax(dirch_policy, dim=0)     #Renormalization
+            #dirch_policy[node.state.clone().to(self.model.device).flatten() == 0.] = float('-inf')
+            #dirch_policy = F.softmax(dirch_policy, dim=0)
+            dirch_policy *= node.state.clone().to(self.model.device).flatten()
+            dirch_policy /= torch.sum(dirch_policy)
             while not node.is_fully_expanded():
                 exp_node, exp_node_storage_updated = node.expand(self.node_storage.copy(), dirch_policy)
                 self.node_storage.update(exp_node_storage_updated)
-
-
         elif self.args['MCTS_add_dirich_noise_par'] <= 0:
             #No Dirichlet Noise
             pass
 
 
-    def update_starting_node_children_prior(self, starting_node, mcts_action_probs):
-        '''Updates the prior probaility of the children nodes of starting_node. In this way the GraphMCTS updates the UCB
-            and the GraphMCTS selection phase will select different nodes without getting stuck with the same best_child forever'''
 
+
+    def update_starting_node_children_prior(self, starting_node, mcts_action_probs):
+        """
+        Update the prior probabilities of the children nodes of the starting node.
+
+        This method updates the prior probabilities of the children nodes of `starting_node` to ensure that the
+        GraphMCTS updates the UCB values. This helps in selecting different nodes during the selection phase,
+        preventing the algorithm from getting stuck with the same best child forever.
+
+        Parameters
+        ----------
+        starting_node : Node
+            The node whose children nodes' prior probabilities need to be updated.
+        mcts_action_probs : torch.Tensor
+            A tensor containing the updated action probabilities from the MCTS search.
+        """
         for child_node, data in starting_node.children.items():
             action = list(data.action)
             starting_node.children[child_node].action_prob = mcts_action_probs[action[0], action[1]].item()
