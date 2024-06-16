@@ -13,6 +13,7 @@ from Resnet import ResNet
 import time
 from functools import lru_cache, cache
 import hashlib
+from loguru import logger
 
 # The NodeData class represents a node with an action and its corresponding probability.
 class NodeData:
@@ -311,6 +312,9 @@ class Node:
                     reward = -reward
                 return reward
 
+
+
+
     def backpropagate(self, reward, parent_path):
         """
         Update the rewards of nodes in a tree structure based on a given reward and parent path, with an option
@@ -338,8 +342,10 @@ class Node:
         self.update(reward)
         reward = -reward
         prov_parent_path = parent_path.copy()
-        prov_parent_path = prov_parent_path[:-1]    #exclude the last element to avoid backpropagate 2 times
-        #print(f"\nparent_path:{prov_parent_path}")
+        prov_parent_path = prov_parent_path[:-1]  # Exclude the last element to avoid backpropagating 2 times
+
+        if self.args.get('debug', False):
+            logger.debug(f"\nparent_path: {prov_parent_path}")  # Debug
 
         if only_path:
             if len(prov_parent_path) > 0:
@@ -350,7 +356,8 @@ class Node:
                 pass
         else:
             for parent in self.parents:
-                parent.backpropagate(reward,prov_parent_path)
+                parent.backpropagate(reward, prov_parent_path)
+
 
 
     def __str__(self):
@@ -371,6 +378,9 @@ class Node:
         """
         return f"\nState: {self.state}, \nVisits: {self.visit_count}, Value: {self.score}, how many children: {len(self.children)}" \
                f"\nHow many Parents: {len(self.parents)}, How many Exp_moves left: {len(self.expandable_moves)}"
+
+
+               
 
     def get_state_key(self, state):
         """
@@ -455,6 +465,7 @@ class GraphMCTS:
         self.opponent_actions = []
         self.turn = 0
 
+
     @torch.no_grad()
     def search(self, state, playable_cells, start_node=None):
         """
@@ -503,25 +514,26 @@ class GraphMCTS:
         else:
             starting_node = start_node
         node = starting_node
-        #print(f"\nSearch Node: {node}")    #Debug
-        #Add dirichlet noise at the strarting node
+        logger.debug(f"Search Node: {node}")  if self.args['Debug'] else None   # Debug
+
+        # Add dirichlet noise at the starting node
         self.add_dirichlet_noise(node)
 
         for search in tqdm(range(self.args['MCTS_num_searches']), desc="searches", disable=self.args['MCTS_progress_disabled']):
-            self.turn = 0   #set the turn counter to zero
+            self.turn = 0   # Set the turn counter to zero
             self.append_parent_path((node, None))
             while (not node.is_ending_node() and len(node.children) > 0):
-                #Selection
+                # Selection
                 node, action_taken = node.select(self.node_storage)
                 self.append_parent_path((node, action_taken))
 
             looser, reward = self.A_game.get_reward_and_looser(node.state, node.action_taken)
 
             if looser is False:
-                self.collect_actions()  #Collect players actions
+                self.collect_actions()  # Collect players actions
                 while not node.is_fully_expanded():
                     masked_policy, policy, value = self.model(node.state.clone().to(self.model.device), self.current_actions.copy(), self.opponent_actions.copy())
-                    #Expansion
+                    # Expansion
                     exp_node, exp_node_storage_updated = node.expand(self.node_storage, masked_policy)
                     self.node_storage.update(exp_node_storage_updated)
 
@@ -535,8 +547,8 @@ class GraphMCTS:
         for child, data in starting_node.children.items():
             action = list(data.action)
             if self.args['MCTS_only_path_backpropagation'] is True:
-                #Handcrafted action_probs formula = ((child.score) / (child.visit_count + 1))
-                action_probs[action[0], action[1]] =  starting_node.get_ucb(child) #((child.score) / (child.visit_count + 1))
+                # Handcrafted action_probs formula = ((child.score) / (child.visit_count + 1))
+                action_probs[action[0], action[1]] =  starting_node.get_ucb(child) # ((child.score) / (child.visit_count + 1))
             else:
                 action_probs[action[0], action[1]] = (self.args['MCTS_num_searches']**2)*((child.score) / (child.visit_count + 1))
 
@@ -557,20 +569,22 @@ class GraphMCTS:
         search_time = end_time - start_time
 
         if self.args['verbose_mcts'] is True:
-            print(f"\nSearch time: {search_time:.2f} seconds for num_searches: {self.args['MCTS_num_searches']} of max_size: {(self.args['max_size'], self.args['max_size'])} \
+            logger.info(f"\nSearch time: {search_time:.2f} seconds for num_searches: {self.args['MCTS_num_searches']} of max_size: {(self.args['max_size'], self.args['max_size'])} \
                         with OnlyPathBackpropagation: {self.args['MCTS_only_path_backpropagation']}")
-            print(f"\nAction_Probs:\n{action_probs}\n\nAction_Probs_Value:\n{action_probs_value}")
-            print(f"\nMost probable move:{self.num_to_move(torch.argmax(action_probs))}, of probability:{torch.max(action_probs):.5f}")
-            print(f"\nLeast probable move:{self.num_to_move(torch.argmin(action_probs))}, of probability:{torch.min(action_probs):.5f}")
-            print(f"\nProbabilities sum: {action_probs_sum}")
-            print(f"\nMost Valuable move:{self.num_to_move(torch.argmax(action_probs_value))}, of Value:{torch.max(action_probs_value):.5f}")
-            print(f"\nLeast Valuable move:{self.num_to_move(torch.argmin(action_probs_value))}, of Value:{torch.min(action_probs_value):.5f}")
-            print(f"\nBest_UCB: {starting_node.best_ucb:.5f} Best_child_action from starting Node: {starting_node.children[starting_node.best_child].action}")
-            print(f"\nBest_child state of Starting_Node:\n{starting_node.best_child.state}")
-            print(f"\nStarting_Node:\n{starting_node}")
-            print(f"\nLenght of Node Storage: {len(self.node_storage)}")
+            logger.info(f"\nAction_Probs:\n{action_probs}\n\nAction_Probs_Value:\n{action_probs_value}")
+            logger.info(f"\nMost probable move:{self.num_to_move(torch.argmax(action_probs))}, of probability:{torch.max(action_probs):.5f}")
+            logger.info(f"\nLeast probable move:{self.num_to_move(torch.argmin(action_probs))}, of probability:{torch.min(action_probs):.5f}")
+            logger.info(f"\nProbabilities sum: {action_probs_sum}")
+            logger.info(f"\nMost Valuable move:{self.num_to_move(torch.argmax(action_probs_value))}, of Value:{torch.max(action_probs_value):.5f}")
+            logger.info(f"\nLeast Valuable move:{self.num_to_move(torch.argmin(action_probs_value))}, of Value:{torch.min(action_probs_value):.5f}")
+            logger.info(f"\nBest_UCB: {starting_node.best_ucb:.5f} Best_child_action from starting Node: {starting_node.children[starting_node.best_child].action}")
+            logger.info(f"\nBest_child state of Starting_Node:\n{starting_node.best_child.state}")
+            logger.info(f"\nStarting_Node:\n{starting_node}")
+            logger.info(f"\nLength of Node Storage: {len(self.node_storage)}")
 
         return action_probs, action_probs_value
+
+
 
     def masking_action_probs(self, action_probs, starting_node):
         """
@@ -806,6 +820,7 @@ if __name__ == "__main__":
         'MCTS_updating_children_prior':True,
         'MCTS_only_path_backpropagation' : True,
         'MCTS_best_child_decay': True,
+        'Debug' : False,
         'MCTS_progress_disabled': False,
         'MCTS_set_equal_prior':False,
         'batch_size': 32,

@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import random
+from loguru import logger
 
 class ResNet(nn.Module):
     def __init__(self, args):
@@ -47,8 +48,9 @@ class ResNet(nn.Module):
 
 
         if self.args.get('verbose_resnet', False):
-            print(f"\nResNet Device: {next(self.parameters()).device}")
-            print(f"ResNet:\n{self}")
+            logger.info(f"\nResNet Device: {next(self.parameters()).device}")
+            logger.info(f"ResNet:\n{self}")
+
 
 
     def set_device(self):
@@ -184,7 +186,9 @@ class ResNet(nn.Module):
             x_input_flat = torch.flatten(x_input)
             masked_policy = masked_policy * x_input_flat  #  element-wise multiplication
             sum_probs = torch.sum(masked_policy)
-            #print(f"Unbatched sum_probs: {sum_probs}")
+
+            logger.debug(f"Unbatched sum_probs: {sum_probs}") if self.args['Debug'] else None
+            
             if sum_probs > 0:
                 masked_policy = masked_policy / sum_probs
                 masked_policy = masked_policy
@@ -320,6 +324,7 @@ args = {
     'num_hidden' : 64,
     'num_resBlocks': 16,
     'seed' : 42,
+    'Debug' : False,
     'only_path_backpropagation' : True,
     'MCTS_set_equal_prior':True    #Set equal prior for all child node when expanded
 }

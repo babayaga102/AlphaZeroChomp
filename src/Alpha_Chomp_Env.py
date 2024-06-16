@@ -14,6 +14,7 @@ import csv
 import os
 import matplotlib.pyplot as plt
 from functools import lru_cache, cache
+from loguru import logger
 
 class AlphaChompEnv():
     def __init__(self, args, current_player = None):
@@ -329,6 +330,7 @@ args = {
         'MCTS_best_child_decay': True,   #If you want to reset the best_child and best_ucb every treshold visits of a node
         'MCTS_updating_children_prior': False,    #If True updates the action_prob of children of the starting_node which than updates in the UCB formula
         'MCTS_progress_disabled': True,
+        'Debug' : False,
         'dis_Splay_progress': True,
         'dis_Train_progress': True,
         'batch_size': 64,   #Batch_size dimension. It's also implemented dynamic batching

@@ -35,7 +35,7 @@ def main():
 
     args = {
         'min_size': 2,      #It's highly suggested to set min_size = 2
-        'max_size': 4,      #The maximum size of the game grid or game board
+        'max_size': 3,      #The maximum size of the game grid or game board
         'save_data_env': False,
         'model_device': 'cpu',  #Device requested for the model. Supports 'cpu' or 'mps'. To train on 'mps' set 'MCTS_set_equal_prior' = True
         'device': 'cpu',    #Device for other operations Graph-MCTS search, tipically 'cpu'
@@ -45,9 +45,9 @@ def main():
         'verbose_Alphazero' : False,    #Bool: if Alphazero is verbose
         'verbose_Play': True,      #Bool: prints more when playing
         'C': 2,     #UCB coefficient to balance exploration/exploitation
-        'MCTS_num_searches': 300,    #How many GraphMCTS searchs to choose 1 move to be played in SelfPlay
-        'learn_iterations': 2,     #How many Selplay and Training
-        'selfPlay_iterations' : 128,     #Number of games that if will play against itself for every SelfPlay. It's recomended to set selfPlay_iterations ≈ 50 + max_size**2
+        'MCTS_num_searches': 250,    #How many GraphMCTS searchs to choose 1 move to be played in SelfPlay
+        'learn_iterations': 3,     #How many Selplay and Training
+        'selfPlay_iterations' : 140,     #Number of games that if will play against itself for every SelfPlay. It's recomended to set selfPlay_iterations ≈ 50 + max_size**2
         'seflPlay_subgrids': True,      #If True, allow SelfPlay over all subgrids of the biggest state Board
         'epochs': 5,       #Training epochs
         'shuffle_replaybuffer': True,   # Bool: to shuffle or not the training Data befor training
@@ -66,6 +66,7 @@ def main():
         'MCTS_set_equal_prior':False,    #BOOL: Set equal prior for all child node when expanded. Uses Resnet.mask_and_renorm_NoSoftmax if set to True
         'dis_Splay_progress': True,     #Bool: Display progrss bar for SelfPlay
         'dis_Train_progress': True,     #Bool: Display progrss bar for Training
+        'Debug' : False,    #If True prints the Debug logs
         'batch_size': 64,   #Batch_size dimension. It's also implemented dynamic batching
         'lr' : 0.001,    #Learning rate of the optimizer
         'normal_move_reward': 0.003,    #The reward of a legal move apart from winning\loosing move

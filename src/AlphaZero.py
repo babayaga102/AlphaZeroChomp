@@ -12,6 +12,8 @@ from tqdm import tqdm
 from Alpha_Chomp_Env import AlphaChompEnv
 from Resnet import ResNet
 from Alpha_GraphMCTS import GraphMCTS
+from loguru import logger
+
 
 
 # The `AlphaZeroChomp` class implements a reinforcement learning algorithm using self-play iterations,
@@ -35,6 +37,8 @@ class AlphaZeroChomp():
         self.P1_winning_rate = 0
         self.P1_winning_rate_history = []
         self.hist_avg_eval_turn = []
+
+
 
     def learn(self):
         """
@@ -65,7 +69,6 @@ class AlphaZeroChomp():
         max_size_iterations = min(self.args['selfPlay_iterations'], self.args['selfPlay_iterations'] - len(self.A_game.get_all_rectangular_sizes()))
         self.list_grids_size = self.A_game.create_list_of_tuples(max_size_iterations)
 
-
         for iteration in tqdm(range(self.args['learn_iterations']), desc='learn_iter'):
             TrainMemory = []
 
@@ -77,17 +80,16 @@ class AlphaZeroChomp():
             for epoch in tqdm(range(self.args['epochs']),desc='Training_epoch',disable=self.args['dis_Train_progress']):
                 self.train(TrainMemory)
 
-
             self.SelfPlay_evaluation()    #Evaluate the improvement of the model strategies
 
             self.save_checkpoints(iteration)
         alfa_end_time = time.time()
         time_spent = alfa_end_time - alfa_start_time
         #if self.args['verbose_Alphazero']:
-        print(f"\nLearning Time Alphazero: {str(timedelta(seconds=time_spent))}\n")
-        print(f"Printing the Hyperparameters of the current programme...")
-        print('\n'.join(f"{key}: {value}" for key, value in self.args.items())) #Prints the Hyperparameters
-        print(f"\nThe Model has been trained successfully!\n")
+        logger.info(f"Learning Time Alphazero: {str(timedelta(seconds=time_spent))} for model_device: {self.args['model_device']} and device: {self.args['device']}")
+        logger.info("Printing the Hyperparameters of the current programme...")
+        logger.info('\n'.join(f"{key}: {value}" for key, value in self.args.items())) #Prints the Hyperparameters
+        logger.info("The Model has been trained successfully!")
         root_node = self.mcts.find_node_by_state(torch.ones(self.args['max_size'], self.args['max_size']))
         #self.mcts.visualize_mcts(root_node)    #Uncomment to visualize the tree. It may require hours of computation...
         self.plot_analitics()
@@ -115,7 +117,7 @@ class AlphaZeroChomp():
         """
         self.model.train()
         random.shuffle(TrainMemory) if self.args['shuffle_replaybuffer'] else None
-        # Calculate the number of batches, for Dybamic Batching
+        # Calculate the number of batches, for Dynamic Batching
         num_batches = (len(TrainMemory) + self.args['batch_size'] - 1) // self.args['batch_size']
 
         for batch_index in range(num_batches):
@@ -130,15 +132,16 @@ class AlphaZeroChomp():
             )
 
             state, policy_target, curr_actions, opp_actions, value_target = (
-                torch.tensor(state, dtype=torch.float32, device = self.model.device),
-                torch.tensor(policy_target, dtype=torch.float32, device = self.model.device),
-                torch.tensor(curr_actions, dtype=torch.float32, device = self.model.device),
-                torch.tensor(opp_actions, dtype=torch.float32, device = self.model.device),
-                torch.tensor(value_target, dtype=torch.float32, device = self.model.device).view(-1, 1)
+                torch.tensor(state, dtype=torch.float32, device=self.model.device),
+                torch.tensor(policy_target, dtype=torch.float32, device=self.model.device),
+                torch.tensor(curr_actions, dtype=torch.float32, device=self.model.device),
+                torch.tensor(opp_actions, dtype=torch.float32, device=self.model.device),
+                torch.tensor(value_target, dtype=torch.float32, device=self.model.device).view(-1, 1)
             )
 
-            # Print debug information to ensure tensors are correct
-            print("State tensor :", state) if self.args['verbose_Alphazero'] else None
+            # Debug information to ensure tensors are correct
+
+            logger.debug(f"State tensor: {state}") if self.args['Debug'] else None
 
             masked_policy, policy_logit, value = self.model(state, curr_actions, opp_actions)
 
@@ -148,11 +151,10 @@ class AlphaZeroChomp():
             policy_logit = policy_logit.view(current_batch_size, -1)
             policy_target = policy_target.view(current_batch_size, -1)  # Flatten the policy_target
 
-            print(f"\nValue output model: {value}") if self.args['verbose_Alphazero'] else None
-            print(f"\nValue target: {value_target}") if self.args['verbose_Alphazero'] else None
+            logger.debug(f"Value output model: {value}") if self.args['Debug'] else None
+            logger.debug(f"Value target: {value_target}")if self.args['Debug'] else None
 
-            #masked_policy_log = torch.log(masked_policy + 1e-40)  # Convert to logit
-            policy_logit_log = torch.log(policy_logit + 1e-40 )
+            policy_logit_log = torch.log(policy_logit + 1e-40)
 
             policy_loss = F.cross_entropy(policy_logit_log, policy_target)
             value_loss = F.mse_loss(value, value_target)
@@ -163,6 +165,9 @@ class AlphaZeroChomp():
             self.optim.step()
             self.loss_hist.append(loss.item())
         return
+
+
+
 
     def selfPlay(self, selfPlay_iteration):
         """
@@ -180,7 +185,8 @@ class AlphaZeroChomp():
             and outcome for each move made during self-play.
         """
 
-        #print(f"\nStarting selfplay!")
+        logger.debug("Starting selfplay!") if self.args.get('Debug', False) else None
+
         BufferMemory = []
         current_player = 1
         self.turn = 0
@@ -189,30 +195,36 @@ class AlphaZeroChomp():
             state, valid_moves, looser = self.A_game.get_given_state(grid_size)
 
         else:
-            state, valid_moves, looser = self.A_game.get_given_state((self.args['max_size'],self.args['max_size']))
+            state, valid_moves, looser = self.A_game.get_given_state((self.args['max_size'], self.args['max_size']))
 
         while not looser:
-            print(f"\nNew round") if self.args['verbose_Alphazero'] else None
-            print(f"\nCurrent state:\n{state}") if self.args['verbose_Alphazero'] else None
+            logger.info(f"\nNew round") if self.args['verbose_Alphazero'] else None
+            logger.info(f"\nCurrent state:\n{state}") if self.args['verbose_Alphazero'] else None
 
             self.turn += 1
             action_prob_mcts, action_value_mcts = self.mcts.search(state.clone(), valid_moves.copy())
             action_prob_mcts = action_prob_mcts.flatten()
-            print(f"\nAlphazero Action Probs:{action_prob_mcts}") if self.args['verbose_Alphazero'] else None
-            #Apply tempetarure fro exploration/exploitation increase
-            temp_action_prob_mcts = action_prob_mcts.clone() ** (1/self.args['temperature'])
 
-            action = torch.multinomial(temp_action_prob_mcts, 1).item() #sample the action from the temp_action_prob_mcts and not from action_prob_mcts
+            logger.info(f"\nAlphazero Action Probs:{action_prob_mcts}") if self.args['verbose_Alphazero'] else None
+
+            # Apply temperature for exploration/exploitation increase
+            temp_action_prob_mcts = action_prob_mcts.clone() ** (1 / self.args['temperature'])
+
+            action = torch.multinomial(temp_action_prob_mcts, 1).item()  # sample the action from the temp_action_prob_mcts and not from action_prob_mcts
             action = self.mcts.num_to_move(action)
-            print(f"\nAlphazer state: {state}") if self.args['verbose_Alphazero'] else None
+
+            logger.info(f"\nAlphazer state: {state}") if self.args['verbose_Alphazero'] else None
+
             current_actions, opponent_actions = self.collect_actions(action)
 
             # Append a copy of the state tensor to BufferMemory
             BufferMemory.append((state.clone(), action_prob_mcts.clone(), current_actions.clone(), opponent_actions.clone(), current_player))
-            print(f"\nAlphazero action: {action}\n") if self.args['verbose_Alphazero'] else None
+
+            logger.info(f"\nAlphazero action: {action}\n") if self.args['verbose_Alphazero'] else None
 
             state, valid_moves, looser, reward = self.A_game.get_next_state(state.clone(), action)
-            print(f"\nAlphazero looser: {looser}\n") if self.args['verbose_Alphazero'] else None
+
+            logger.info(f"\nAlphazero looser: {looser}\n") if self.args['verbose_Alphazero'] else None
 
             if looser is True:
                 ReturnMemory = []
@@ -223,13 +235,13 @@ class AlphaZeroChomp():
                         hist_outcome = normal_move_reward
                     hist_action_probs_mcts = hist_action_probs_mcts.view(self.args['max_size'], self.args['max_size'])
                     ReturnMemory.append((hist_state, hist_action_probs_mcts, hist_curr_actions, hist_opp_actions, hist_outcome))
-                #print(f"\nReturnMemory:\n{ReturnMemory}")
-                #print(f"\nlenght_of_ReturnMemory: {len(ReturnMemory)}\nReturnMemory:\n{ReturnMemory}")
-                #exit()
+
+                logger.debug(f"ReturnMemory:\n{ReturnMemory}") if self.args.get('Debug', False) else None
+                logger.debug(f"length_of_ReturnMemory: {len(ReturnMemory)}") if self.args.get('Debug', False) else None
+
                 return ReturnMemory
 
             current_player = self.A_game.other_player(current_player)
-
 
 
 
@@ -348,9 +360,9 @@ class AlphaZeroChomp():
         Returns
         -------
         torch.Tensor
-            A tensor representing the actions of the current player.
+            A tensor representing the actions of the current player, matrix of +1.
         torch.Tensor
-            A tensor representing the actions of the opponent.
+            A tensor representing the actions of the opponent, matrix of -1.
         """
         if self.turn == 1:
             #Create blank tensors at first turn
@@ -596,7 +608,8 @@ class AlphaZeroChomp():
                 #Check that P1 replies simmetrically to the moves of P2
                 self.sqr_optimal_strategy = all(p1 == p2 for p1, p2 in zip(adjusted_P1_moves, switched_P2_moves))
                 self.optim_stategy_counter_sqr += 1 if self.sqr_optimal_strategy  else 0
-                print(f"\nOptimal Strategy on grid_size: {grid_size}!") if self.args['verbose_Alphazero'] else None
+                logger.info(f"\nOptimal Strategy on grid_size: {grid_size}!") if self.args['verbose_Alphazero'] else None
+
 
         elif self.A_game.is_square(grid_size) is True and winner == 2:
             pass
@@ -703,6 +716,7 @@ if __name__ == "__main__":
         'MCTS_set_equal_prior':False,    #BOOL: Set equal prior for all child node when expanded. Uses Resnet.mask_and_renorm_NoSoftmax if set to True
         'dis_Splay_progress': True,     #Bool: Display progrss bar for SelfPlay
         'dis_Train_progress': True,     #Bool: Display progrss bar for Training
+        'Debug' : False,
         'batch_size': 64,   #Batch_size dimension. It's also implemented dynamic batching
         'lr' : 0.001,    #Learning rate of the optimizer
         'normal_move_reward': 0.003,    #The reward of a legal move apart from winning\loosing move
